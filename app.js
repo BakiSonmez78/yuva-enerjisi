@@ -48,6 +48,16 @@ let myEmail = localStorage.getItem('userEmail');
 function init() {
     console.log("App Initializing...");
 
+    // 0. Safety Timeout: If nothing happens in 2 sec, show login (failsafe)
+    setTimeout(() => {
+        const overlay = document.getElementById('login-overlay');
+        const processing = document.getElementById('household-message').innerText.includes('yükleniyor');
+        if (overlay && overlay.style.display !== 'none' && !processing && !localStorage.getItem('userEmail')) {
+            console.log("Failsafe: Showing login");
+            showLoginBtn();
+        }
+    }, 2000);
+
     // 1. Check URL for login return
     const params = new URLSearchParams(window.location.search);
     if (params.get('email')) {
