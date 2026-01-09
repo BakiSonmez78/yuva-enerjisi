@@ -30,11 +30,27 @@ const unlinkDadBtn = document.getElementById('unlink-dad-btn');
 // Notification Cooldown (to avoid spamming)
 let lastNotificationTime = 0;
 
+// Role Elements
+const roleRadios = document.querySelectorAll('input[name="role"]');
+const btnGroupMom = document.getElementById('sync-mom-btn').parentElement;
+const btnGroupDad = document.getElementById('sync-dad-btn').parentElement;
+
 // Initialization
 function init() {
+    // 1. Load saved role
+    const savedRole = localStorage.getItem('userRole') || 'mom';
+    setRole(savedRole);
+
     updateUI();
     checkConnectionStatus();
-    requestNotificationPermission(); // Ask for permission on load
+    requestNotificationPermission();
+
+    // 2. Role Switch Listeners
+    roleRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            setRole(e.target.value);
+        });
+    });
 
     // Sliders
     if (simMomSlider) simMomSlider.addEventListener('input', (e) => simMomValDisp.textContent = e.target.value);
@@ -58,6 +74,22 @@ function init() {
     // Unlink Buttons
     if (unlinkMomBtn) unlinkMomBtn.addEventListener('click', () => handleUnlink('mom'));
     if (unlinkDadBtn) unlinkDadBtn.addEventListener('click', () => handleUnlink('dad'));
+}
+
+function setRole(role) {
+    localStorage.setItem('userRole', role);
+
+    // Update Radio UI
+    document.getElementById(`role-${role}`).checked = true;
+
+    // Show/Hide Buttons
+    if (role === 'mom') {
+        btnGroupMom.classList.remove('inactive-role');
+        btnGroupDad.classList.add('inactive-role');
+    } else {
+        btnGroupMom.classList.add('inactive-role');
+        btnGroupDad.classList.remove('inactive-role');
+    }
 }
 
 async function requestNotificationPermission() {

@@ -340,7 +340,82 @@ input[type=range] {
     display: none !important;
 }
 
-/* Add spinning animation for refresh */
+/* Role Switcher */
+.role-switch-container {
+    margin-right: auto;
+    /* Push buttons to right */
+    margin-left: 20px;
+}
+
+.role-switch {
+    display: flex;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    position: relative;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.role-switch input {
+    display: none;
+}
+
+.role-switch label {
+    padding: 5px 15px;
+    cursor: pointer;
+    z-index: 2;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: color 0.3s;
+}
+
+.role-switch input:checked+label {
+    color: var(--bg-dark);
+    /* Dark text on light selection */
+    font-weight: 700;
+}
+
+.role-switch .slider {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: 50%;
+    /* Approx for 2 items */
+    background: var(--text-light);
+    /* White slider */
+    border-radius: 17px;
+    transition: transform 0.3s ease;
+    z-index: 1;
+}
+
+/* Move slider based on selection */
+#role-dad:checked~.slider {
+    transform: translateX(100%);
+    /* Move right */
+    width: 46%;
+    /* slight adjustment */
+    left: 4px;
+}
+
+#role-mom:checked~.slider {
+    width: 48%;
+}
+
+/* Update Header Layout to accommodate switch */
+header {
+    flex-wrap: wrap;
+    /* Allow wrapping on small screens */
+    gap: 10px;
+}
+
+/* Hide inactive auth group */
+.btn-group.inactive-role {
+    display: none !important;
+}
+
+/* Spinner */
 .fa-spin {
     animation: fa-spin 2s infinite linear;
 }
