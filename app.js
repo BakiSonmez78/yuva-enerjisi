@@ -24,10 +24,8 @@ const simMomValDisp = document.getElementById('sim-mom-val');
 const simDadValDisp = document.getElementById('sim-dad-val');
 const updateBtn = document.getElementById('simulate-update');
 
-const syncMomBtn = document.getElementById('sync-mom-btn');
-const unlinkMomBtn = document.getElementById('unlink-mom-btn');
-const syncDadBtn = document.getElementById('sync-dad-btn');
-const unlinkDadBtn = document.getElementById('unlink-dad-btn');
+// Listeners
+// (None for old buttons anymore)
 
 // Notification Cooldown (to avoid spamming)
 let lastNotificationTime = 0;
