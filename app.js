@@ -44,28 +44,44 @@ let currentFamilyId = localStorage.getItem('familyId') || 'DEMO';
 let myEmail = localStorage.getItem('userEmail');
 
 // Initialization
+// INIT
 function init() {
-    // Check URL params for login return
+    console.log("App Initializing...");
+
+    // 1. Check URL for login return
     const params = new URLSearchParams(window.location.search);
     if (params.get('email')) {
         myEmail = params.get('email');
         localStorage.setItem('userEmail', myEmail);
 
-        if (params.get('setup') === 'needed') {
-            showSetupModal();
-        }
-
-        // Clean URL
+        // Clean URL cleanly
         window.history.replaceState({}, document.title, "/");
-    }
 
-    if (!myEmail) {
-        showLoginBtn();
+        // Check for Joined/Setup flags
+        if (params.get('setup') === 'needed') showSetupModal();
+        if (params.get('joined') === 'true') alert("Aileye başarıyla katıldınız! Hoşgeldiniz.");
     } else {
-        refreshDashboard();
+        // 2. Check LocalStorage
+        const stored = localStorage.getItem('userEmail');
+        if (stored) myEmail = stored;
     }
 
-    requestNotificationPermission();
+    // 3. DECIDE: Show Dashboard or Login
+    if (myEmail) {
+        refreshDashboard();
+        // Show User Info in header
+        const authContainer = document.querySelector('.auth-buttons');
+        if (authContainer) {
+            authContainer.innerHTML = `<span style="font-size:0.9rem;">👤 ${myEmail.split('@')[0]}</span> <button class="icon-btn sm" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>`;
+        }
+    } else {
+        showLoginBtn();
+    }
+
+    // Notifications
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
 
     // Listeners for Setup Form
     document.getElementById('save-family-btn')?.addEventListener('click', saveFamilySettings);
