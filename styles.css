@@ -420,6 +420,45 @@ header {
     animation: fa-spin 2s infinite linear;
 }
 
+/* Family Input Style */
+.family-input-container {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 5px;
+    margin: 5px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.family-input-container input {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    width: 120px;
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.family-input-container button {
+    background: var(--primary);
+    border: none;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.family-input-container button:hover {
+    transform: scale(1.1);
+}
+
 @keyframes fa-spin {
     0% {
         transform: rotate(0deg);

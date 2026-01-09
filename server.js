@@ -41,24 +41,29 @@ async function connectToDb() {
 }
 
 // TOKEN HELPER: Get
-async function getTokens() {
+async function getTokens(familyId) {
+    const id = familyId || 'DEMO';
     if (tokensCollection) {
-        const doc = await tokensCollection.findOne({ _id: 'global_tokens' });
+        const doc = await tokensCollection.findOne({ _id: id });
         return doc || { mom: null, dad: null };
     }
-    return global.memoryTokens || { mom: null, dad: null };
+    // Simple memory fallback support
+    if (!global.memoryTokens) global.memoryTokens = {};
+    return global.memoryTokens[id] || { mom: null, dad: null };
 }
 
 // TOKEN HELPER: Save
-async function saveTokens(newTokens) {
+async function saveTokens(familyId, newTokens) {
+    const id = familyId || 'DEMO';
     if (tokensCollection) {
         await tokensCollection.updateOne(
-            { _id: 'global_tokens' },
+            { _id: id },
             { $set: newTokens },
             { upsert: true }
         );
     } else {
-        global.memoryTokens = newTokens;
+        if (!global.memoryTokens) global.memoryTokens = {};
+        global.memoryTokens[id] = newTokens;
     }
 }
 
@@ -126,7 +131,7 @@ async function refreshToken(role, existingTokens) {
     if (resp.data.access_token) {
         existingTokens[role].access_token = resp.data.access_token;
         existingTokens[role].expiry_date = Date.now() + (resp.data.expires_in * 1000);
-        await saveTokens(existingTokens);
+        // saveTokens is now handled by the calling endpoint
         return resp.data.access_token;
     }
     return null;
@@ -191,10 +196,15 @@ const server = http.createServer(async (req, res) => {
     // 1. AUTH INITIATE
     if (parsedUrl.pathname === '/auth') {
         const role = parsedUrl.query.role || 'mom';
+        const familyId = parsedUrl.query.familyId || 'DEMO'; // Capture family ID
+
+        // Pass familyId in state alongside role: "role|familyId"
+        const stateVal = `${role}|${familyId}`;
+
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
             `client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&` +
             `response_type=code&scope=${SCOPES}&` +
-            `access_type=offline&prompt=consent&state=${role}`;
+            `access_type=offline&prompt=consent&state=${encodeURIComponent(stateVal)}`;
         res.writeHead(302, { 'Location': authUrl });
         res.end();
         return;
@@ -203,22 +213,25 @@ const server = http.createServer(async (req, res) => {
     // 2. AUTH CALLBACK
     if (parsedUrl.pathname === '/auth/callback') {
         const code = parsedUrl.query.code;
-        const role = parsedUrl.query.state;
+        const stateParam = parsedUrl.query.state || ''; // "role|familyId"
+
+        const parts = stateParam.split('|');
+        const role = parts[0] || 'mom';
+        const familyId = parts[1] || 'DEMO';
 
         if (code) {
             const resp = await exchangeCode(code);
             if (resp.data.access_token) {
-                const currentTokens = await getTokens();
+                const currentTokens = await getTokens(familyId); // Fetch specific family tokens
                 currentTokens[role] = resp.data;
-                // Expiry calculation
                 currentTokens[role].expiry_date = Date.now() + (resp.data.expires_in * 1000);
-                await saveTokens(currentTokens);
+                await saveTokens(familyId, currentTokens);
 
+                // Redirect user back with their family ID in localstorage (preserved on client side)
                 res.writeHead(302, { 'Location': '/' });
                 res.end();
             } else {
-                res.writeHead(500);
-                res.end('Auth Error: ' + JSON.stringify(resp));
+                res.writeHead(500); res.end('Auth Error');
             }
         }
         return;
@@ -226,7 +239,8 @@ const server = http.createServer(async (req, res) => {
 
     // 3. API: GET STATUS
     if (parsedUrl.pathname === '/api/status') {
-        const currentTokens = await getTokens();
+        const familyId = parsedUrl.query.familyId || 'DEMO';
+        const currentTokens = await getTokens(familyId);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
             mom: !!currentTokens.mom,
@@ -238,20 +252,21 @@ const server = http.createServer(async (req, res) => {
     // 3.5 API: LOGOUT
     if (parsedUrl.pathname === '/auth/logout') {
         const role = parsedUrl.query.role;
-        const currentTokens = await getTokens();
+        const familyId = parsedUrl.query.familyId || 'DEMO';
+        const currentTokens = await getTokens(familyId);
         if (currentTokens[role]) {
             currentTokens[role] = null;
-            await saveTokens(currentTokens);
+            await saveTokens(familyId, currentTokens);
         }
-        res.writeHead(200);
-        res.end('Logged out');
+        res.writeHead(200); res.end('Logged out');
         return;
     }
 
     // 4. API: GET DATA
     if (parsedUrl.pathname === '/api/data') {
         const role = parsedUrl.query.role;
-        const currentTokens = await getTokens();
+        const familyId = parsedUrl.query.familyId || 'DEMO';
+        const currentTokens = await getTokens(familyId);
 
         if (!currentTokens[role]) {
             res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -261,8 +276,9 @@ const server = http.createServer(async (req, res) => {
 
         let accessToken = currentTokens[role].access_token;
         if (Date.now() > (currentTokens[role].expiry_date || 0)) {
-            console.log(`Refreshing token for ${role}...`);
+            console.log(`Refreshing token for ${role} in family ${familyId}...`);
             accessToken = await refreshToken(role, currentTokens);
+            await saveTokens(familyId, currentTokens); // Update refresh
         }
 
         if (!accessToken) {

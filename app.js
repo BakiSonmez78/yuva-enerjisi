@@ -35,11 +35,22 @@ const roleRadios = document.querySelectorAll('input[name="role"]');
 const btnGroupMom = document.getElementById('sync-mom-btn').parentElement;
 const btnGroupDad = document.getElementById('sync-dad-btn').parentElement;
 
+// Family ID Logic
+const familyInput = document.getElementById('family-id');
+const setFamilyBtn = document.getElementById('set-family-btn');
+let currentFamilyId = localStorage.getItem('familyId') || 'DEMO';
+
 // Initialization
 function init() {
-    // 1. Load saved role
+    // 1. Load saved role & family
     const savedRole = localStorage.getItem('userRole') || 'mom';
     setRole(savedRole);
+
+    if (familyInput) {
+        familyInput.value = currentFamilyId;
+        familyInput.addEventListener('change', updateFamilyId);
+        if (setFamilyBtn) setFamilyBtn.addEventListener('click', updateFamilyId);
+    }
 
     updateUI();
     checkConnectionStatus();
@@ -74,6 +85,16 @@ function init() {
     // Unlink Buttons
     if (unlinkMomBtn) unlinkMomBtn.addEventListener('click', () => handleUnlink('mom'));
     if (unlinkDadBtn) unlinkDadBtn.addEventListener('click', () => handleUnlink('dad'));
+}
+
+function updateFamilyId() {
+    const val = familyInput.value.trim();
+    if (val) {
+        currentFamilyId = val;
+        localStorage.setItem('familyId', currentFamilyId);
+        checkConnectionStatus(); // Reload status for new family
+        addNotification(`Aile değiştirildi: ${currentFamilyId}`, 'success');
+    }
 }
 
 function setRole(role) {
@@ -121,16 +142,18 @@ function sendSystemNotification(title, body) {
 
 async function checkConnectionStatus() {
     try {
-        const res = await fetch('/api/status');
+        const res = await fetch(`/api/status?familyId=${encodeURIComponent(currentFamilyId)}`);
         const status = await res.json();
 
-        updateButtonState('mom', status.mom);
-        updateButtonState('dad', status.dad);
+        state.momConnected = status.mom;
+        state.dadConnected = status.dad;
 
-        // Auto-refresh if connected
-        if (status.mom) fetchData('mom');
-        if (status.dad) fetchData('dad');
+        // If connected, fetch data automatically
+        if (state.momConnected) fetchData('mom');
+        if (state.dadConnected) fetchData('dad');
 
+        updateUI();
+        generateNotifications();
     } catch (e) {
         console.error("Status check failed", e);
     }
@@ -157,44 +180,69 @@ function updateButtonState(role, isConnected) {
     }
 }
 
-function handleSyncClick(role) {
-    // Logic handles in fetchData (if 401 -> redirect)
-    fetchData(role, true);
-}
-
-async function handleUnlink(role) {
-    if (!confirm('Bu hesabın bağlantısını kesmek istediğinize emin misiniz?')) return;
-
-    try {
-        await fetch(`/auth/logout?role=${role}`);
-        updateButtonState(role, false);
-        addNotification(`${role === 'mom' ? 'Anne' : 'Baba'} hesabı ayrıldı. Başka hesap bağlayabilirsiniz.`, "warning");
-    } catch (e) {
-        console.error(e);
+async function handleSyncClick(role) {
+    if ((role === 'mom' && state.momConnected) || (role === 'dad' && state.dadConnected)) {
+        // Already connected -> Refresh
+        fetchData(role);
+        addNotification(`${role === 'mom' ? 'Anne' : 'Baba'} verileri güncelleniyor...`, 'success');
+    } else {
+        // Not connected -> Auth (Pass Role AND FamilyID)
+        // We pack them into 'state' param separated by '|'
+        const stateParam = `${role}|${currentFamilyId}`;
+        window.location.href = `/auth?role=${role}&familyId=${encodeURIComponent(currentFamilyId)}`;
     }
 }
 
-async function fetchData(role, redirectIfAuthNeeded = false) {
+async function handleUnlink(role) {
+    if (confirm(`${role === 'mom' ? 'Anne' : 'Baba'} hesabını ayırmak istediğinize emin misiniz?`)) {
+        try {
+            await fetch(`/auth/logout?role=${role}&familyId=${encodeURIComponent(currentFamilyId)}`);
+            state[`${role}Connected`] = false;
+            // Clear data visually
+            if (role === 'mom') state.momEnergy = 0;
+            else state.dadEnergy = 0;
+            updateUI();
+            addNotification("Hesap bağlantısı kesildi.", "warning");
+        } catch (e) { console.error(e); }
+    }
+}
+
+async function fetchData(role) {
     let btn = role === 'mom' ? syncMomBtn : syncDadBtn;
     if (btn) btn.classList.add('fa-spin');
 
     try {
-        const res = await fetch(`/api/data?role=${role}`);
-
+        const res = await fetch(`/api/data?role=${role}&familyId=${encodeURIComponent(currentFamilyId)}`);
         if (res.status === 401) {
-            if (redirectIfAuthNeeded) {
-                // Redirect to auth to connect NEW account or reconnect
-                window.location.href = `/auth?role=${role}`;
-            }
+            // Token expired or invalid
+            state[`${role}Connected`] = false;
+            updateUI();
             return;
         }
-
         const data = await res.json();
-        processFitnessData(role, data);
-        updateButtonState(role, true);
+        // Calculate Energy Logic
+        let totalPoints = 0;
+        if (data.bucket && data.bucket.length > 0) {
+            const dataset = data.bucket[0].dataset;
+            // 0: Heart Points, 1: Steps
+            const hp = dataset[0].point[0]?.value[0]?.fpVal || 0;
+            const steps = dataset[1].point[0]?.value[0]?.intVal || 0;
+
+            // Formula: 1 HP = 2 Energy, 100 Steps = 1 Energy
+            // Cap at 100 per person
+            totalPoints = (hp * 2) + (steps / 100);
+            if (totalPoints > 100) totalPoints = 100;
+        }
+
+        if (role === 'mom') state.momEnergy = Math.round(totalPoints);
+        if (role === 'dad') state.dadEnergy = Math.round(totalPoints);
+
+        state[`${role}Connected`] = true; // Confirm connection
+        updateUI();
+        generateNotifications();
 
     } catch (err) {
-        console.error(err);
+        console.error("Data fetch error", err);
         addNotification("Veri çekilemedi: " + err, "alert");
     } finally {
         if (btn) btn.classList.remove('fa-spin');
