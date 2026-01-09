@@ -12,5 +12,8 @@
         "google-auth-library": "^9.0.0",
         "mongodb": "^6.3.0",
         "open": "^9.1.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
     }
 }
