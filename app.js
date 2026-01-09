@@ -89,46 +89,61 @@ function init() {
 }
 
 function showLoginBtn() {
-    // Hide dashboard, show huge google login
-    document.querySelector('.auth-buttons').innerHTML = `
-        <button class="btn btn-connect" onclick="window.location.href='/auth/login'">
-            <i class="fa-brands fa-google"></i> Aileye Bağlan
-        </button>
+    // Show Glass Overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'login-overlay';
+    overlay.innerHTML = `
+        <div class="login-card">
+            <div style="font-size: 3rem; margin-bottom:10px;">🏠</div>
+            <h2>Yuva Enerjisi</h2>
+            <p>Ailenizin huzurunu ve sağlığını takip edin.</p>
+            <button class="btn-google" onclick="window.location.href='/auth/login'">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
+                Google ile Başla
+            </button>
+        </div>
     `;
-    // Hide controls
-    document.querySelector('.simulator').style.display = 'none';
+    document.body.appendChild(overlay);
+
+    // Hide main app
+    document.querySelector('.container').style.filter = 'blur(10px)';
 }
 
 function showSetupModal() {
-    // Simple prompt (in real app use a modal)
-    // For now, let's inject a form into top of page
-    const formHtml = `
-        <div id="setup-box" style="background:var(--primary); padding:20px; border-radius:15px; margin-bottom:20px; border:2px solid white;">
-            <h3>👨‍👩‍👧 Yeni Aile Kurulumu</h3>
-            <p>Merhaba! Aile reisinin hesabı oluşturuldu.</p>
-            
-            <label>Ben Kimim?</label>
-            <div style="margin:10px 0;">
-                <input type="radio" name="setup-role" value="dad" checked> Baba
-                <input type="radio" name="setup-role" value="mom"> Anne
-            </div>
-            
-            <label>Eşimin E-Posta Adresi:</label>
-            <input type="email" id="partner-email-input" placeholder="ornek@gmail.com" style="width:100%; padding:10px; border-radius:10px; border:none; margin:10px 0;">
-            
-            <button id="save-family-btn" class="btn" style="background:white; color:var(--primary); width:100%">Kaydet ve Başla</button>
+    // Show Invite Button immediately instead of complex form
+    const container = document.querySelector('.container');
+    const existing = document.getElementById('invite-area');
+    if (existing) return;
+
+    const div = document.createElement('div');
+    div.id = 'invite-area';
+    div.className = 'invite-box';
+    div.innerHTML = `
+        <h3>💌 Ailenizi Tamamlayın</h3>
+        <p>Eşiniz henüz bu aileye katılmadı.</p>
+        <button id="create-invite-btn" class="btn" style="background:var(--primary); color:white; width:100%; border-radius:30px;">
+            <i class="fa-solid fa-link"></i> Davet Linki Oluştur
+        </button>
+        <div id="invite-result" style="display:none; margin-top:15px;">
+            <p style="font-size:0.8rem; color:var(--text-muted)">Bu linki eşinize gönderin:</p>
+            <div class="invite-link" id="link-text">...</div>
+            <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('link-text').innerText); alert('Kopyalandı!')" style="font-size:0.8rem; padding:5px 10px;">Kopyala</button>
         </div>
     `;
-    const container = document.querySelector('.container');
-    const exist = document.getElementById('setup-box');
-    if (!exist) {
-        const div = document.createElement('div');
-        div.innerHTML = formHtml;
-        container.insertBefore(div, container.firstChild);
 
-        // Re-attach listener
-        div.querySelector('#save-family-btn').addEventListener('click', saveFamilySettings);
-    }
+    // Insert after header
+    const header = document.querySelector('header');
+    header.parentNode.insertBefore(div, header.nextSibling);
+
+    div.querySelector('#create-invite-btn').addEventListener('click', async () => {
+        try {
+            const res = await fetch(`/api/invite?email=${encodeURIComponent(myEmail)}`);
+            const data = await res.json();
+            document.getElementById('link-text').innerText = data.url;
+            document.getElementById('invite-result').style.display = 'block';
+            document.getElementById('create-invite-btn').style.display = 'none';
+        } catch (e) { alert("Hata: " + e); }
+    });
 }
 
 async function saveFamilySettings() {
