@@ -4,7 +4,8 @@ const fs = require('fs');
 const url = require('url');
 const querystring = require('querystring');
 const path = require('path');
-const { MongoClient } = require('mongodb');
+// const { MongoClient } = require('mongodb'); // TEMPORARILY DISABLED
+const MongoClient = null;
 
 // CONFIG
 const PORT = process.env.PORT || 8080;
