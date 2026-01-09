@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuva Enerjisi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <i class="fa-solid fa-house-heart logo-icon"></i>
+                <h1>Yuva Enerjisi</h1>
+            </div>
+            <div class="auth-buttons">
+                <!-- MOM -->
+                <div class="btn-group">
+                    <button id="sync-mom-btn" class="icon-btn" title="Anne Senkronize Et" style="background: #e17055;">
+                        <i class="fa-solid fa-user-nurse"></i>
+                    </button>
+                    <button id="unlink-mom-btn" class="icon-btn sm hidden" title="Bağlantıyı Kes"
+                        style="background: #fab1a0;">
+                        <i class="fa-solid fa-link-slash"></i>
+                    </button>
+                </div>
+
+                <!-- DAD -->
+                <div class="btn-group">
+                    <button id="sync-dad-btn" class="icon-btn" title="Baba Senkronize Et" style="background: #0984e3;">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </button>
+                    <button id="unlink-dad-btn" class="icon-btn sm hidden" title="Bağlantıyı Kes"
+                        style="background: #74b9ff;">
+                        <i class="fa-solid fa-link-slash"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Household Status -->
+            <section class="household-status">
+                <div class="total-energy-circle">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg" d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" stroke-dasharray="0, 100" d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage">0</text>
+                    </svg>
+                    <div class="label">Hane Gücü</div>
+                </div>
+                <div id="household-message" class="status-message">
+                    Veriler bekleniyor...
+                </div>
+            </section>
+
+            <!-- Persons Cards -->
+            <section class="persons-grid">
+                <!-- Anne -->
+                <div class="person-card mom">
+                    <div class="avatar">
+                        <i class="fa-solid fa-user-nurse"></i>
+                    </div>
+                    <div class="info">
+                        <h2>Anne</h2>
+                        <div class="energy-bar-container">
+                            <div class="energy-fill" id="mom-energy-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="energy-value" id="mom-energy-val">--%</span>
+                    </div>
+                </div>
+
+                <!-- Baba -->
+                <div class="person-card dad">
+                    <div class="avatar">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <div class="info">
+                        <h2>Baba</h2>
+                        <div class="energy-bar-container">
+                            <div class="energy-fill" id="dad-energy-bar" style="width: 0%"></div>
+                        </div>
+                        <span class="energy-value" id="dad-energy-val">--%</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Area / Notifications -->
+            <section class="notifications-area">
+                <h3><i class="fa-solid fa-bell"></i> Bildirimler</h3>
+                <div id="notification-list" class="notification-list">
+                    <div class="empty-state">Henüz yeni bildirim yok.</div>
+                </div>
+            </section>
+
+            <!-- DEBUG / SIMULATION TOOLS -->
+            <section class="simulation-tools">
+                <h3><i class="fa-solid fa-flask"></i> Simülasyon Araçları</h3>
+                <p>Google Fit verisi yerine buradan test edebilirsiniz:</p>
+                <div class="slider-group">
+                    <label>Anne Yorgunluk (Enerji): <span id="sim-mom-val">50</span></label>
+                    <input type="range" id="sim-mom" min="0" max="100" value="50">
+                </div>
+                <div class="slider-group">
+                    <label>Baba Yorgunluk (Enerji): <span id="sim-dad-val">50</span></label>
+                    <input type="range" id="sim-dad" min="0" max="100" value="50">
+                </div>
+                <button class="primary-btn" id="simulate-update">Durumu Güncelle</button>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+
+</html>
