@@ -8,11 +8,17 @@ const { MongoClient } = require('mongodb');
 
 // CONFIG
 const PORT = process.env.PORT || 8080;
+// Client ID is technically public info in JS apps, but let's keep it via env for consistency if desired.
+// However, Git only blocks High Entropy Secrets (Client Secret). Client ID usually passes.
 const CLIENT_ID = process.env.CLIENT_ID || '719980821718-3su43irbr13jkdujltdejf3siuc9v89q.apps.googleusercontent.com';
+
+// CRITICAL: REMOVING HARDCODED SECRET. 
+// Localhost users must create a .env file or set this variable manually.
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
+
 const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:8080/auth/callback';
 const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read';
-const MONGO_URI = process.env.MONGO_URI; // Connection String from Render Env
+const MONGO_URI = process.env.MONGO_URI;
 
 // DB Connection
 let db;
@@ -162,6 +168,11 @@ async function fetchFitnessData(accessToken) {
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
 
+    // 0. HEALTH CHECK
+    if (parsedUrl.pathname === '/ping') {
+        res.writeHead(200); res.end('pong'); return;
+    }
+
     // 1. AUTH INITIATE
     if (parsedUrl.pathname === '/auth') {
         const role = parsedUrl.query.role || 'mom';
@@ -264,9 +275,9 @@ const server = http.createServer(async (req, res) => {
 
 });
 
-// Connect DB then Start
-connectToDb().then(() => {
-    server.listen(PORT, () => {
-        console.log(`Server running at http://localhost:${PORT}/`);
-    });
+// START SERVER IMMEDIATELY
+server.listen(PORT, () => {
+    console.log(`Server running at port ${PORT}`);
+    // Try connecting to DB in background
+    connectToDb().then(() => console.log("DB Connected")).catch(e => console.error("DB Fail", e));
 });
