@@ -4,8 +4,7 @@ const fs = require('fs');
 const url = require('url');
 const querystring = require('querystring');
 const path = require('path');
-// const { MongoClient } = require('mongodb'); // TEMPORARILY DISABLED
-const MongoClient = null;
+const { MongoClient } = require('mongodb'); // RESTORED
 
 // CONFIG
 const PORT = process.env.PORT || 8080;
@@ -18,10 +17,11 @@ const MONGO_URI = process.env.MONGO_URI;
 // DB Connection
 let db;
 let familiesCol;
+const invites = new Map(); // Store temporary invite codes in memory: code -> familyId
 
 async function connectToDb() {
     if (!MONGO_URI) {
-        console.warn("⚠️ MONGO_URI missing. Running in MEMORY mode (not persistent).");
+        console.warn("⚠️ MONGO_URI missing. Memory mode.");
         return;
     }
     try {
@@ -31,7 +31,7 @@ async function connectToDb() {
         familiesCol = db.collection('families');
         console.log("✅ Connected to MongoDB");
     } catch (e) {
-        console.error("❌ MongoDB Connection Error:", e);
+        console.error("❌ MongoDB Error:", e);
     }
 }
 
@@ -135,7 +135,7 @@ async function fetchFitnessData(accessToken) {
     }, body);
 }
 
-// STORAGE
+// STORAGE: Find or Create Family
 async function findFamilyByEmail(email) {
     if (!familiesCol) return null;
     return await familiesCol.findOne({
@@ -149,10 +149,15 @@ async function createFamily(ownerEmail) {
         owner_email: ownerEmail,
         partner_email: null,
         tokens: { owner: null, partner: null },
-        roles: { owner: 'dad', partner: 'mom' }
+        roles: { owner: 'dad', partner: 'mom' } // Default
     };
     await familiesCol.insertOne(doc);
     return doc;
+}
+
+// INVITE LOGIC
+function generateInviteCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
 const mimeTypes = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
@@ -181,10 +186,13 @@ const server = http.createServer(async (req, res) => {
 
         // 1. AUTH LOGIN
         if (parsedUrl.pathname === '/auth/login') {
+            const inviteCode = parsedUrl.query.invite;
+            const state = inviteCode ? `invite:${inviteCode}` : 'login';
+
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
                 `client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&` +
                 `response_type=code&scope=${SCOPES}&` +
-                `access_type=offline&prompt=consent`;
+                `access_type=offline&prompt=consent&state=${state}`;
             res.writeHead(302, { 'Location': authUrl });
             res.end();
             return;
@@ -193,6 +201,8 @@ const server = http.createServer(async (req, res) => {
         // 2. AUTH CALLBACK
         if (parsedUrl.pathname === '/auth/callback') {
             const code = parsedUrl.query.code;
+            const state = parsedUrl.query.state || '';
+
             if (!code) { res.end('No code'); return; }
 
             const tokenResp = await exchangeCode(code);
@@ -202,6 +212,39 @@ const server = http.createServer(async (req, res) => {
             const userEmail = userResp.data.email;
             if (!userEmail) { res.end('No Email'); return; }
 
+            // HANDLE JOIN VIA INVITE
+            if (state.startsWith('invite:')) {
+                const inviteCode = state.split(':')[1];
+                const familyId = invites.get(inviteCode);
+
+                if (familyId && familiesCol) {
+                    // Update the family with this user as partner
+                    // Assume inviter was owner, so this is partner
+                    // Check if family already has partner?
+                    const fam = await familiesCol.findOne({ _id: familyId });
+                    if (fam && !fam.partner_email) {
+                        const newTokens = tokenResp.data;
+                        newTokens.expiry_date = Date.now() + (newTokens.expires_in * 1000);
+
+                        // Determine complementary role
+                        const partnerRole = fam.roles.owner === 'dad' ? 'mom' : 'dad';
+
+                        await familiesCol.updateOne({ _id: familyId }, {
+                            $set: {
+                                partner_email: userEmail,
+                                'roles.partner': partnerRole,
+                                'tokens.partner': newTokens
+                            }
+                        });
+                        invites.delete(inviteCode); // Consume code
+                        res.writeHead(302, { 'Location': `/?email=${encodeURIComponent(userEmail)}&joined=true` });
+                        res.end();
+                        return;
+                    }
+                }
+            }
+
+            // NORMAL LOGIN / CREATE
             let family = await findFamilyByEmail(userEmail);
 
             if (family) {
@@ -268,6 +311,37 @@ const server = http.createServer(async (req, res) => {
                     res.writeHead(500); res.end(e.toString());
                 }
             });
+            return;
+        }
+
+        // 3. GENERATE INVITE API
+        if (parsedUrl.pathname === '/api/invite') {
+            const userEmail = parsedUrl.query.email;
+            const fam = await findFamilyByEmail(userEmail);
+            if (fam) {
+                const code = generateInviteCode();
+                invites.set(code, fam._id);
+                // Auto expire in 1 hour
+                setTimeout(() => invites.delete(code), 3600000);
+
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ code: code, url: `https://${req.headers.host}/join?code=${code}` }));
+            } else {
+                res.writeHead(404); res.end('Family not found');
+            }
+            return;
+        }
+
+        // 4. JOIN REDIRECTOR
+        if (parsedUrl.pathname === '/join') {
+            const code = parsedUrl.query.code;
+            if (code) {
+                // Redirect to auth with invite state
+                res.writeHead(302, { 'Location': `/auth/login?invite=${code}` });
+                res.end();
+            } else {
+                res.end('Invalid Link');
+            }
             return;
         }
 
