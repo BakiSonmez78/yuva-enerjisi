@@ -103,24 +103,21 @@ function init() {
 }
 
 function showLoginBtn() {
-    // Show Glass Overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'login-overlay';
-    overlay.innerHTML = `
-        <div class="login-card">
-            <div style="font-size: 3rem; margin-bottom:10px;">🏠</div>
-            <h2>Yuva Enerjisi</h2>
-            <p>Ailenizin huzurunu ve sağlığını takip edin.</p>
-            <button class="btn-google" onclick="window.location.href='/auth/login'">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
-                Google ile Başla
-            </button>
-        </div>
-    `;
-    document.body.appendChild(overlay);
+    // Make sure overlay is visible
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.style.display = 'flex';
 
-    // Hide main app
-    document.querySelector('.container').style.filter = 'blur(10px)';
+    // Blur container
+    const container = document.querySelector('.container');
+    if (container) container.style.filter = 'blur(10px)';
+}
+
+function hideLoginBtn() {
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    const container = document.querySelector('.container');
+    if (container) container.style.filter = 'none';
 }
 
 function showSetupModal() {
