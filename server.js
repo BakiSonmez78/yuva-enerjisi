@@ -173,6 +173,21 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200); res.end('pong'); return;
     }
 
+    // 0.5 DEBUG INFO
+    if (parsedUrl.pathname === '/debug') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'Online',
+            version: '1.2.0 (Debug)',
+            dbState: tokensCollection ? 'Connected' : 'Disconnected (Memory Mode)',
+            configuredRedirectUri: REDIRECT_URI,
+            clientIdPrefix: CLIENT_ID ? CLIENT_ID.substring(0, 10) + '...' : 'Missing',
+            hasClientSecret: !!CLIENT_SECRET,
+            mongoUriConfigured: !!MONGO_URI
+        }, null, 2));
+        return;
+    }
+
     // 1. AUTH INITIATE
     if (parsedUrl.pathname === '/auth') {
         const role = parsedUrl.query.role || 'mom';
@@ -202,6 +217,7 @@ const server = http.createServer(async (req, res) => {
                 res.writeHead(302, { 'Location': '/' });
                 res.end();
             } else {
+                res.writeHead(500);
                 res.end('Auth Error: ' + JSON.stringify(resp));
             }
         }
@@ -238,7 +254,9 @@ const server = http.createServer(async (req, res) => {
         const currentTokens = await getTokens();
 
         if (!currentTokens[role]) {
-            res.writeHead(401); res.end('Not connected'); return;
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not connected' }));
+            return;
         }
 
         let accessToken = currentTokens[role].access_token;
@@ -248,7 +266,9 @@ const server = http.createServer(async (req, res) => {
         }
 
         if (!accessToken) {
-            res.writeHead(401); res.end('Token expired'); return;
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Token expired' }));
+            return;
         }
 
         const fitData = await fetchFitnessData(accessToken);
@@ -266,7 +286,8 @@ const server = http.createServer(async (req, res) => {
 
     fs.readFile(filePath, function (error, content) {
         if (error) {
-            res.writeHead(404); res.end('404');
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: "Not Found", path: parsedUrl.pathname }));
         } else {
             res.writeHead(200, { 'Content-Type': contentType });
             res.end(content, 'utf-8');
