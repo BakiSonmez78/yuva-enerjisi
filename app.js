@@ -30,16 +30,6 @@ const updateBtn = document.getElementById('simulate-update');
 // Notification Cooldown (to avoid spamming)
 let lastNotificationTime = 0;
 
-// Role Elements
-const roleRadios = document.querySelectorAll('input[name="role"]');
-const btnGroupMom = document.getElementById('sync-mom-btn').parentElement;
-const btnGroupDad = document.getElementById('sync-dad-btn').parentElement;
-
-// Family ID Logic
-const familyInput = document.getElementById('family-id');
-const setFamilyBtn = document.getElementById('set-family-btn');
-let currentFamilyId = localStorage.getItem('familyId') || 'DEMO';
-
 // State - Email based
 let myEmail = localStorage.getItem('userEmail');
 
