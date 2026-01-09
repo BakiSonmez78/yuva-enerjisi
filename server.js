@@ -392,6 +392,9 @@ const server = http.createServer(async (req, res) => {
     });
 });
 
-connectToDb().then(() => {
-    server.listen(PORT, () => console.log("Server Email-Auth Ready on " + PORT));
+// START SERVER IMMEDIATELY
+server.listen(PORT, () => {
+    console.log(`Server running at port ${PORT}`);
+    // Connect to DB asynchronously
+    connectToDb().catch(e => console.error("DB Connection Failed:", e));
 });
