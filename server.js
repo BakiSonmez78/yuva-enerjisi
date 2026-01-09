@@ -4,36 +4,61 @@ const fs = require('fs');
 const url = require('url');
 const querystring = require('querystring');
 const path = require('path');
+const { MongoClient } = require('mongodb');
 
 // CONFIG
 const PORT = process.env.PORT || 8080;
-// Client ID is technically public info in JS apps, but let's keep it via env for consistency if desired.
-// However, Git only blocks High Entropy Secrets (Client Secret). Client ID usually passes.
 const CLIENT_ID = process.env.CLIENT_ID || '719980821718-3su43irbr13jkdujltdejf3siuc9v89q.apps.googleusercontent.com';
-
-// CRITICAL: REMOVING HARDCODED SECRET.
-// Localhost users must create a .env file or set this variable manually.
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-
 const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:8080/auth/callback';
 const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read';
+const MONGO_URI = process.env.MONGO_URI; // Connection String from Render Env
 
-// TOKEN STORAGE (Simple JSON file)
-const TOKEN_FILE = 'tokens.json';
-let tokens = { mom: null, dad: null };
+// DB Connection
+let db;
+let tokensCollection;
 
-if (fs.existsSync(TOKEN_FILE)) {
-    try { tokens = JSON.parse(fs.readFileSync(TOKEN_FILE)); } catch (e) { }
+async function connectToDb() {
+    if (!MONGO_URI) {
+        console.warn("MONGO_URI not found! Falling back to memory storage (NOT PERSISTENT).");
+        return;
+    }
+    try {
+        const client = new MongoClient(MONGO_URI);
+        await client.connect();
+        db = client.db('yuva_enerjisi');
+        tokensCollection = db.collection('tokens');
+        console.log("Connected to MongoDB");
+    } catch (e) {
+        console.error("MongoDB Connection Error:", e);
+    }
+}
+
+// TOKEN HELPER: Get
+async function getTokens() {
+    if (tokensCollection) {
+        const doc = await tokensCollection.findOne({ _id: 'global_tokens' });
+        return doc || { mom: null, dad: null };
+    }
+    return global.memoryTokens || { mom: null, dad: null };
+}
+
+// TOKEN HELPER: Save
+async function saveTokens(newTokens) {
+    if (tokensCollection) {
+        await tokensCollection.updateOne(
+            { _id: 'global_tokens' },
+            { $set: newTokens },
+            { upsert: true }
+        );
+    } else {
+        global.memoryTokens = newTokens;
+    }
 }
 
 const mimeTypes = {
     '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css'
 };
-
-// HELPER: Save Tokens
-function saveTokens() {
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify(tokens, null, 2));
-}
 
 // HELPER: Google Request
 function googleRequest(options, postData) {
@@ -74,8 +99,8 @@ async function exchangeCode(code) {
 }
 
 // OAUTH: Refresh Token
-async function refreshToken(role) {
-    const rToken = tokens[role]?.refresh_token;
+async function refreshToken(role, existingTokens) {
+    const rToken = existingTokens[role]?.refresh_token;
     if (!rToken) return null;
 
     const postData = querystring.stringify({
@@ -93,9 +118,9 @@ async function refreshToken(role) {
     }, postData);
 
     if (resp.data.access_token) {
-        tokens[role].access_token = resp.data.access_token;
-        tokens[role].expiry_date = Date.now() + (resp.data.expires_in * 1000);
-        saveTokens();
+        existingTokens[role].access_token = resp.data.access_token;
+        existingTokens[role].expiry_date = Date.now() + (resp.data.expires_in * 1000);
+        await saveTokens(existingTokens);
         return resp.data.access_token;
     }
     return null;
@@ -103,15 +128,11 @@ async function refreshToken(role) {
 
 // API: Fetch Fitness Data
 async function fetchFitnessData(accessToken) {
-    // Google Fit Aggregate logic needs precise timing
-    // Using current time as endTime to capture latest updates
     const endTime = Date.now();
-    // Start of today (00:00)
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const startTime = start.getTime();
 
-    // Safety check just in case start > end
     if (startTime >= endTime) return { data: { bucket: [] } };
 
     const body = JSON.stringify({
@@ -119,13 +140,11 @@ async function fetchFitnessData(accessToken) {
             { dataTypeName: 'com.google.heart_minutes' },
             { dataTypeName: 'com.google.step_count.delta' }
         ],
-        // Ask for a single bucket covering the whole day so far
         bucketByTime: { durationMillis: endTime - startTime },
         startTimeMillis: startTime,
         endTimeMillis: endTime
     });
 
-    // Add a random parameter to URL to prevent caching (though POST usually isn't cached)
     const cacheBuster = Math.floor(Math.random() * 100000);
 
     return googleRequest({
@@ -140,7 +159,7 @@ async function fetchFitnessData(accessToken) {
 }
 
 // SERVER
-http.createServer(async (req, res) => {
+const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
 
     // 1. AUTH INITIATE
@@ -149,7 +168,7 @@ http.createServer(async (req, res) => {
         const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
             `client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&` +
             `response_type=code&scope=${SCOPES}&` +
-            `access_type=offline&prompt=consent&state=${role}`; // state carries the role
+            `access_type=offline&prompt=consent&state=${role}`;
         res.writeHead(302, { 'Location': authUrl });
         res.end();
         return;
@@ -158,16 +177,18 @@ http.createServer(async (req, res) => {
     // 2. AUTH CALLBACK
     if (parsedUrl.pathname === '/auth/callback') {
         const code = parsedUrl.query.code;
-        const role = parsedUrl.query.state; // 'mom' or 'dad'
+        const role = parsedUrl.query.state;
 
         if (code) {
             const resp = await exchangeCode(code);
             if (resp.data.access_token) {
-                tokens[role] = resp.data;
-                // Add expiry locally for logic
-                tokens[role].expiry_date = Date.now() + (resp.data.expires_in * 1000);
-                saveTokens();
-                res.writeHead(302, { 'Location': '/index.html' });
+                const currentTokens = await getTokens();
+                currentTokens[role] = resp.data;
+                // Expiry calculation
+                currentTokens[role].expiry_date = Date.now() + (resp.data.expires_in * 1000);
+                await saveTokens(currentTokens);
+
+                res.writeHead(302, { 'Location': '/' });
                 res.end();
             } else {
                 res.end('Auth Error: ' + JSON.stringify(resp));
@@ -176,22 +197,24 @@ http.createServer(async (req, res) => {
         return;
     }
 
-    // 3. API: GET STATUS (Are we connected?)
+    // 3. API: GET STATUS
     if (parsedUrl.pathname === '/api/status') {
+        const currentTokens = await getTokens();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
-            mom: !!tokens.mom,
-            dad: !!tokens.dad
+            mom: !!currentTokens.mom,
+            dad: !!currentTokens.dad
         }));
         return;
     }
 
-    // 3.5 API: LOGOUT / DISCONNECT
+    // 3.5 API: LOGOUT
     if (parsedUrl.pathname === '/auth/logout') {
         const role = parsedUrl.query.role;
-        if (tokens[role]) {
-            tokens[role] = null;
-            saveTokens();
+        const currentTokens = await getTokens();
+        if (currentTokens[role]) {
+            currentTokens[role] = null;
+            await saveTokens(currentTokens);
         }
         res.writeHead(200);
         res.end('Logged out');
@@ -201,19 +224,20 @@ http.createServer(async (req, res) => {
     // 4. API: GET DATA
     if (parsedUrl.pathname === '/api/data') {
         const role = parsedUrl.query.role;
-        if (!tokens[role]) {
+        const currentTokens = await getTokens();
+
+        if (!currentTokens[role]) {
             res.writeHead(401); res.end('Not connected'); return;
         }
 
-        let accessToken = tokens[role].access_token;
-        // Refresh if needed (simple check)
-        if (Date.now() > (tokens[role].expiry_date || 0)) {
+        let accessToken = currentTokens[role].access_token;
+        if (Date.now() > (currentTokens[role].expiry_date || 0)) {
             console.log(`Refreshing token for ${role}...`);
-            accessToken = await refreshToken(role);
+            accessToken = await refreshToken(role, currentTokens);
         }
 
         if (!accessToken) {
-            res.writeHead(401); res.end('Token expired and refresh failed'); return;
+            res.writeHead(401); res.end('Token expired'); return;
         }
 
         const fitData = await fetchFitnessData(accessToken);
@@ -238,7 +262,11 @@ http.createServer(async (req, res) => {
         }
     });
 
-}).listen(PORT);
+});
 
-console.log(`Server running at http://localhost:${PORT}/`);
-console.log('Native Node.js server started. No npm install needed.');
+// Connect DB then Start
+connectToDb().then(() => {
+    server.listen(PORT, () => {
+        console.log(`Server running at http://localhost:${PORT}/`);
+    });
+});
