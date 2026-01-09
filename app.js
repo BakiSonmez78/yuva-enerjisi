@@ -14,6 +14,8 @@ const circlePath = document.querySelector('.circle');
 const circleText = document.querySelector('.percentage');
 const statusMsg = document.getElementById('household-message');
 const notifList = document.getElementById('notification-list');
+const dashboardDiv = document.getElementById('dashboard'); // Need to wrap cards in a div in HTML
+const setupDiv = document.getElementById('setup-layer');   // New setup modal
 
 // Inputs
 const simMomSlider = document.getElementById('sim-mom');
@@ -40,28 +42,35 @@ const familyInput = document.getElementById('family-id');
 const setFamilyBtn = document.getElementById('set-family-btn');
 let currentFamilyId = localStorage.getItem('familyId') || 'DEMO';
 
+// State - Email based
+let myEmail = localStorage.getItem('userEmail');
+
 // Initialization
 function init() {
-    // 1. Load saved role & family
-    const savedRole = localStorage.getItem('userRole') || 'mom';
-    setRole(savedRole);
+    // Check URL params for login return
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('email')) {
+        myEmail = params.get('email');
+        localStorage.setItem('userEmail', myEmail);
 
-    if (familyInput) {
-        familyInput.value = currentFamilyId;
-        familyInput.addEventListener('change', updateFamilyId);
-        if (setFamilyBtn) setFamilyBtn.addEventListener('click', updateFamilyId);
+        if (params.get('setup') === 'needed') {
+            showSetupModal();
+        }
+
+        // Clean URL
+        window.history.replaceState({}, document.title, "/");
     }
 
-    updateUI();
-    checkConnectionStatus();
+    if (!myEmail) {
+        showLoginBtn();
+    } else {
+        refreshDashboard();
+    }
+
     requestNotificationPermission();
 
-    // 2. Role Switch Listeners
-    roleRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            setRole(e.target.value);
-        });
-    });
+    // Listeners for Setup Form
+    document.getElementById('save-family-btn')?.addEventListener('click', saveFamilySettings);
 
     // Sliders
     if (simMomSlider) simMomSlider.addEventListener('input', (e) => simMomValDisp.textContent = e.target.value);
@@ -77,39 +86,110 @@ function init() {
             addNotification("Manuel veri girişi yapıldı.", "warning");
         });
     }
-
-    // Connect/Refresh Buttons
-    if (syncMomBtn) syncMomBtn.addEventListener('click', () => handleSyncClick('mom'));
-    if (syncDadBtn) syncDadBtn.addEventListener('click', () => handleSyncClick('dad'));
-
-    // Unlink Buttons
-    if (unlinkMomBtn) unlinkMomBtn.addEventListener('click', () => handleUnlink('mom'));
-    if (unlinkDadBtn) unlinkDadBtn.addEventListener('click', () => handleUnlink('dad'));
 }
 
-function updateFamilyId() {
-    const val = familyInput.value.trim();
-    if (val) {
-        currentFamilyId = val;
-        localStorage.setItem('familyId', currentFamilyId);
-        checkConnectionStatus(); // Reload status for new family
-        addNotification(`Aile değiştirildi: ${currentFamilyId}`, 'success');
+function showLoginBtn() {
+    // Hide dashboard, show huge google login
+    document.querySelector('.auth-buttons').innerHTML = `
+        <button class="btn btn-connect" onclick="window.location.href='/auth/login'">
+            <i class="fa-brands fa-google"></i> Aileye Bağlan
+        </button>
+    `;
+    // Hide controls
+    document.querySelector('.simulator').style.display = 'none';
+}
+
+function showSetupModal() {
+    // Simple prompt (in real app use a modal)
+    // For now, let's inject a form into top of page
+    const formHtml = `
+        <div id="setup-box" style="background:var(--primary); padding:20px; border-radius:15px; margin-bottom:20px; border:2px solid white;">
+            <h3>👨‍👩‍👧 Yeni Aile Kurulumu</h3>
+            <p>Merhaba! Aile reisinin hesabı oluşturuldu.</p>
+            
+            <label>Ben Kimim?</label>
+            <div style="margin:10px 0;">
+                <input type="radio" name="setup-role" value="dad" checked> Baba
+                <input type="radio" name="setup-role" value="mom"> Anne
+            </div>
+            
+            <label>Eşimin E-Posta Adresi:</label>
+            <input type="email" id="partner-email-input" placeholder="ornek@gmail.com" style="width:100%; padding:10px; border-radius:10px; border:none; margin:10px 0;">
+            
+            <button id="save-family-btn" class="btn" style="background:white; color:var(--primary); width:100%">Kaydet ve Başla</button>
+        </div>
+    `;
+    const container = document.querySelector('.container');
+    const exist = document.getElementById('setup-box');
+    if (!exist) {
+        const div = document.createElement('div');
+        div.innerHTML = formHtml;
+        container.insertBefore(div, container.firstChild);
+
+        // Re-attach listener
+        div.querySelector('#save-family-btn').addEventListener('click', saveFamilySettings);
     }
 }
 
-function setRole(role) {
-    localStorage.setItem('userRole', role);
+async function saveFamilySettings() {
+    const role = document.querySelector('input[name="setup-role"]:checked').value;
+    const pEmail = document.getElementById('partner-email-input').value;
 
-    // Update Radio UI
-    document.getElementById(`role-${role}`).checked = true;
+    if (!pEmail) return alert("Lütfen eşinizin e-postasına girin.");
 
-    // Show/Hide Buttons
-    if (role === 'mom') {
-        btnGroupMom.classList.remove('inactive-role');
-        btnGroupDad.classList.add('inactive-role');
-    } else {
-        btnGroupMom.classList.add('inactive-role');
-        btnGroupDad.classList.remove('inactive-role');
+    try {
+        await fetch('/api/setup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                my_email: myEmail,
+                partner_email: pEmail,
+                my_role: role
+            })
+        });
+
+        // Remove setup box
+        document.getElementById('setup-box').remove();
+        alert("Aile kuruldu! Şimdi eşiniz kendi telefonundan girip Google ile bağlandığında otomatik eşleşeceksiniz.");
+        refreshDashboard();
+
+    } catch (e) {
+        alert("Hata: " + e);
+    }
+}
+
+async function refreshDashboard() {
+    try {
+        const res = await fetch(`/api/dashboard?email=${encodeURIComponent(myEmail)}`);
+        const data = await res.json();
+
+        if (!data.found) {
+            // My email is not in any family (maybe deleted?)
+            localStorage.removeItem('userEmail');
+            location.reload();
+            return;
+        }
+
+        // Setup needed?
+        if (data.setupNeeded) showSetupModal();
+
+        // Update UI Points
+        state.momEnergy = data.mom.energy || 0;
+        state.dadEnergy = data.dad.energy || 0;
+
+        state.momConnected = data.mom.connected;
+        state.dadConnected = data.dad.connected;
+
+        // Hide/Show connection buttons based on who I am?
+        // Actually now frontend just shows stats. The connection is "Google Login" which is already done.
+        // We might want "Re-connect" buttons if token expired?
+        // For simplicity, if connected=false, show button.
+
+        updateUI();
+        generateNotifications(); // Alerts
+
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -137,115 +217,6 @@ function sendSystemNotification(title, body) {
             icon: 'https://cdn-icons-png.flaticon.com/512/2983/2983679.png' // generic warning icon
         });
         lastNotificationTime = now;
-    }
-}
-
-async function checkConnectionStatus() {
-    try {
-        const res = await fetch(`/api/status?familyId=${encodeURIComponent(currentFamilyId)}`);
-        const status = await res.json();
-
-        state.momConnected = status.mom;
-        state.dadConnected = status.dad;
-
-        // If connected, fetch data automatically
-        if (state.momConnected) fetchData('mom');
-        if (state.dadConnected) fetchData('dad');
-
-        updateUI();
-        generateNotifications();
-    } catch (e) {
-        console.error("Status check failed", e);
-    }
-}
-
-function updateButtonState(role, isConnected) {
-    const btn = role === 'mom' ? syncMomBtn : syncDadBtn;
-    const unlinkBtn = role === 'mom' ? unlinkMomBtn : unlinkDadBtn;
-
-    if (!btn) return;
-
-    if (isConnected) {
-        btn.innerHTML = '<i class="fa-solid fa-rotate"></i>'; // Refresh Icon
-        btn.title = "Verileri Güncelle (Google Fit)";
-        btn.classList.add('connected');
-        // Show unlink button
-        if (unlinkBtn) unlinkBtn.classList.remove('hidden');
-    } else {
-        btn.innerHTML = role === 'mom' ? '<i class="fa-solid fa-user-nurse"></i>' : '<i class="fa-solid fa-user-tie"></i>';
-        btn.title = "Hesabı Bağla";
-        btn.classList.remove('connected');
-        // Hide unlink button
-        if (unlinkBtn) unlinkBtn.classList.add('hidden');
-    }
-}
-
-async function handleSyncClick(role) {
-    if ((role === 'mom' && state.momConnected) || (role === 'dad' && state.dadConnected)) {
-        // Already connected -> Refresh
-        fetchData(role);
-        addNotification(`${role === 'mom' ? 'Anne' : 'Baba'} verileri güncelleniyor...`, 'success');
-    } else {
-        // Not connected -> Auth (Pass Role AND FamilyID)
-        // We pack them into 'state' param separated by '|'
-        const stateParam = `${role}|${currentFamilyId}`;
-        window.location.href = `/auth?role=${role}&familyId=${encodeURIComponent(currentFamilyId)}`;
-    }
-}
-
-async function handleUnlink(role) {
-    if (confirm(`${role === 'mom' ? 'Anne' : 'Baba'} hesabını ayırmak istediğinize emin misiniz?`)) {
-        try {
-            await fetch(`/auth/logout?role=${role}&familyId=${encodeURIComponent(currentFamilyId)}`);
-            state[`${role}Connected`] = false;
-            // Clear data visually
-            if (role === 'mom') state.momEnergy = 0;
-            else state.dadEnergy = 0;
-            updateUI();
-            addNotification("Hesap bağlantısı kesildi.", "warning");
-        } catch (e) { console.error(e); }
-    }
-}
-
-async function fetchData(role) {
-    let btn = role === 'mom' ? syncMomBtn : syncDadBtn;
-    if (btn) btn.classList.add('fa-spin');
-
-    try {
-        const res = await fetch(`/api/data?role=${role}&familyId=${encodeURIComponent(currentFamilyId)}`);
-        if (res.status === 401) {
-            // Token expired or invalid
-            state[`${role}Connected`] = false;
-            updateUI();
-            return;
-        }
-        const data = await res.json();
-        // Calculate Energy Logic
-        let totalPoints = 0;
-        if (data.bucket && data.bucket.length > 0) {
-            const dataset = data.bucket[0].dataset;
-            // 0: Heart Points, 1: Steps
-            const hp = dataset[0].point[0]?.value[0]?.fpVal || 0;
-            const steps = dataset[1].point[0]?.value[0]?.intVal || 0;
-
-            // Formula: 1 HP = 2 Energy, 100 Steps = 1 Energy
-            // Cap at 100 per person
-            totalPoints = (hp * 2) + (steps / 100);
-            if (totalPoints > 100) totalPoints = 100;
-        }
-
-        if (role === 'mom') state.momEnergy = Math.round(totalPoints);
-        if (role === 'dad') state.dadEnergy = Math.round(totalPoints);
-
-        state[`${role}Connected`] = true; // Confirm connection
-        updateUI();
-        generateNotifications();
-
-    } catch (err) {
-        console.error("Data fetch error", err);
-        addNotification("Veri çekilemedi: " + err, "alert");
-    } finally {
-        if (btn) btn.classList.remove('fa-spin');
     }
 }
 
