@@ -178,6 +178,50 @@ window.closeInviteModal = function () {
     }
 }
 
+// LOGOUT
+window.logout = function () {
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('displayName');
+    localStorage.removeItem('inviteModalDismissed');
+    window.location.href = '/';
+}
+
+// EDIT DISPLAY NAME
+window.editDisplayName = function () {
+    const nameSpan = document.getElementById('display-name');
+    if (!nameSpan) return;
+
+    const currentName = nameSpan.innerText;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.style.cssText = 'background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3); border-radius:5px; padding:2px 8px; color:white; font-size:0.9rem; outline:none;';
+
+    nameSpan.replaceWith(input);
+    input.focus();
+    input.select();
+
+    input.addEventListener('blur', saveName);
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveName();
+    });
+
+    function saveName() {
+        const newName = input.value.trim() || currentName;
+        localStorage.setItem('displayName', newName);
+
+        const span = document.createElement('span');
+        span.id = 'display-name';
+        span.style.cursor = 'pointer';
+        span.title = 'İsmi düzenlemek için tıklayın';
+        span.innerText = newName;
+        span.onclick = editDisplayName;
+
+        input.replaceWith(span);
+    }
+}
+
 async function saveFamilySettings() {
     const role = document.querySelector('input[name="setup-role"]:checked').value;
     const pEmail = document.getElementById('partner-email-input').value;
