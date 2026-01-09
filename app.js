@@ -68,6 +68,7 @@ function init() {
 
     // 3. DECIDE: Show Dashboard or Login
     if (myEmail) {
+        hideLoginBtn(); // <--- ALSO HIDE HERE
         refreshDashboard();
         // Show User Info in header
         const authContainer = document.querySelector('.auth-buttons');
@@ -188,6 +189,8 @@ async function refreshDashboard() {
     try {
         const res = await fetch(`/api/dashboard?email=${encodeURIComponent(myEmail)}`);
         const data = await res.json();
+
+        hideLoginBtn(); // <--- HIDE OVERLAY HERE
 
         if (!data.found) {
             // My email is not in any family (maybe deleted?)
