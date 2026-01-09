@@ -135,24 +135,64 @@ async function fetchFitnessData(accessToken) {
     }, body);
 }
 
+// MEMORY FALLBACK
+const memoryFamilies = []; // [ { _id, owner_email, ... } ]
+
 // STORAGE: Find or Create Family
 async function findFamilyByEmail(email) {
-    if (!familiesCol) return null;
-    return await familiesCol.findOne({
-        $or: [{ owner_email: email }, { partner_email: email }]
-    });
+    // 1. Try DB
+    if (familiesCol) {
+        return await familiesCol.findOne({
+            $or: [{ owner_email: email }, { partner_email: email }]
+        });
+    }
+    // 2. Fallback Memory
+    console.log("Using Memory Store (Find)");
+    return memoryFamilies.find(f => f.owner_email === email || f.partner_email === email);
 }
 
 async function createFamily(ownerEmail) {
-    if (!familiesCol) return null;
     const doc = {
+        _id: 'mem_' + Date.now(), // Generate ID
         owner_email: ownerEmail,
         partner_email: null,
         tokens: { owner: null, partner: null },
-        roles: { owner: 'dad', partner: 'mom' } // Default
+        roles: { owner: 'dad', partner: 'mom' }
     };
-    await familiesCol.insertOne(doc);
+
+    if (familiesCol) {
+        await familiesCol.insertOne(doc);
+    } else {
+        console.log("Using Memory Store (Create)");
+        memoryFamilies.push(doc);
+    }
     return doc;
+}
+
+// Helper to update family safely
+async function updateFamily(query, update) {
+    if (familiesCol) {
+        await familiesCol.updateOne(query, update);
+    } else {
+        // Memory Update (Limited support for $set)
+        const fam = memoryFamilies.find(f => {
+            if (query._id) return f._id === query._id;
+            if (query.owner_email) return f.owner_email === query.owner_email;
+            return false;
+        });
+        if (fam && update.$set) {
+            Object.keys(update.$set).forEach(key => {
+                // Handle nested keys like 'tokens.owner'
+                if (key.includes('.')) {
+                    const parts = key.split('.');
+                    if (!fam[parts[0]]) fam[parts[0]] = {};
+                    fam[parts[0]][parts[1]] = update.$set[key];
+                } else {
+                    fam[key] = update.$set[key];
+                }
+            });
+        }
+    }
 }
 
 // INVITE LOGIC
@@ -217,11 +257,15 @@ const server = http.createServer(async (req, res) => {
                 const inviteCode = state.split(':')[1];
                 const familyId = invites.get(inviteCode);
 
-                if (familyId && familiesCol) {
+                if (familyId) {
                     // Update the family with this user as partner
-                    // Assume inviter was owner, so this is partner
-                    // Check if family already has partner?
-                    const fam = await familiesCol.findOne({ _id: familyId });
+                    let fam;
+                    if (familiesCol) {
+                        fam = await familiesCol.findOne({ _id: familyId });
+                    } else {
+                        fam = memoryFamilies.find(f => f._id === familyId);
+                    }
+
                     if (fam && !fam.partner_email) {
                         const newTokens = tokenResp.data;
                         newTokens.expiry_date = Date.now() + (newTokens.expires_in * 1000);
@@ -229,14 +273,14 @@ const server = http.createServer(async (req, res) => {
                         // Determine complementary role
                         const partnerRole = fam.roles.owner === 'dad' ? 'mom' : 'dad';
 
-                        await familiesCol.updateOne({ _id: familyId }, {
+                        await updateFamily({ _id: familyId }, {
                             $set: {
                                 partner_email: userEmail,
                                 'roles.partner': partnerRole,
                                 'tokens.partner': newTokens
                             }
                         });
-                        invites.delete(inviteCode); // Consume code
+                        invites.delete(inviteCode);
                         res.writeHead(302, { 'Location': `/?email=${encodeURIComponent(userEmail)}&joined=true` });
                         res.end();
                         return;
@@ -254,26 +298,26 @@ const server = http.createServer(async (req, res) => {
                 const newTokens = tokenResp.data;
                 newTokens.expiry_date = Date.now() + (newTokens.expires_in * 1000);
 
-                if (familiesCol) {
-                    await familiesCol.updateOne(
-                        { _id: family._id },
-                        { $set: { [`tokens.${userKey}`]: newTokens } }
-                    );
-                }
+                await updateFamily(
+                    { _id: family._id },
+                    { $set: { [`tokens.${userKey}`]: newTokens } }
+                );
+
                 res.writeHead(302, { 'Location': `/?email=${encodeURIComponent(userEmail)}` });
                 res.end();
             } else {
                 // CREATE NEW
                 await createFamily(userEmail);
-                // Save tokens
-                if (familiesCol) {
-                    const newTokens = tokenResp.data;
-                    newTokens.expiry_date = Date.now() + (newTokens.expires_in * 1000);
-                    await familiesCol.updateOne(
-                        { owner_email: userEmail },
-                        { $set: { 'tokens.owner': newTokens } }
-                    );
-                }
+                // Save tokens (createFamily handles initial doc, but let's update tokens to be sure)
+                const newTokens = tokenResp.data;
+                newTokens.expiry_date = Date.now() + (newTokens.expires_in * 1000);
+
+                // We just created it, finding it by email is safe
+                await updateFamily(
+                    { owner_email: userEmail },
+                    { $set: { 'tokens.owner': newTokens } }
+                );
+
                 res.writeHead(302, { 'Location': `/?email=${encodeURIComponent(userEmail)}&setup=needed` });
                 res.end();
             }
