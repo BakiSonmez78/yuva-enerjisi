@@ -70,10 +70,17 @@ function init() {
     if (myEmail) {
         hideLoginBtn(); // <--- ALSO HIDE HERE
         refreshDashboard();
-        // Show User Info in header
+        // Show User Info in header with editable name
         const authContainer = document.querySelector('.auth-buttons');
         if (authContainer) {
-            authContainer.innerHTML = `<span style="font-size:0.9rem;">👤 ${myEmail.split('@')[0]}</span> <button class="icon-btn sm" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>`;
+            const displayName = localStorage.getItem('displayName') || myEmail.split('@')[0];
+            authContainer.innerHTML = `
+                <span style="font-size:0.9rem; display:flex; align-items:center; gap:5px;">
+                    👤 <span id="display-name" style="cursor:pointer;" title="İsmi düzenlemek için tıklayın">${displayName}</span>
+                    <i class="fa-solid fa-pen" style="font-size:0.7rem; color:rgba(255,255,255,0.5); cursor:pointer;" onclick="editDisplayName()"></i>
+                </span> 
+                <button class="icon-btn sm" onclick="logout()" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
+            `;
         }
     } else {
         showLoginBtn();
@@ -122,6 +129,9 @@ function hideLoginBtn() {
 }
 
 function showSetupModal() {
+    // Check if user dismissed this modal
+    if (localStorage.getItem('inviteModalDismissed') === 'true') return;
+
     // Show Invite Button immediately instead of complex form
     const container = document.querySelector('.container');
     const existing = document.getElementById('invite-area');
@@ -131,6 +141,7 @@ function showSetupModal() {
     div.id = 'invite-area';
     div.className = 'invite-box';
     div.innerHTML = `
+        <button class="close-btn" onclick="closeInviteModal()" style="position:absolute; top:10px; right:10px; background:transparent; border:none; color:rgba(255,255,255,0.6); font-size:1.5rem; cursor:pointer; padding:5px 10px; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">&times;</button>
         <h3>💌 Ailenizi Tamamlayın</h3>
         <p>Eşiniz henüz bu aileye katılmadı.</p>
         <button id="create-invite-btn" class="btn" style="background:var(--primary); color:white; width:100%; border-radius:30px;">
@@ -156,6 +167,15 @@ function showSetupModal() {
             document.getElementById('create-invite-btn').style.display = 'none';
         } catch (e) { alert("Hata: " + e); }
     });
+}
+
+// Close invite modal
+window.closeInviteModal = function () {
+    const modal = document.getElementById('invite-area');
+    if (modal) {
+        modal.remove();
+        localStorage.setItem('inviteModalDismissed', 'true');
+    }
 }
 
 async function saveFamilySettings() {
@@ -200,7 +220,14 @@ async function refreshDashboard() {
         }
 
         // Setup needed?
-        if (data.setupNeeded) showSetupModal();
+        if (data.setupNeeded) {
+            showSetupModal();
+            // Start polling to detect when partner joins
+            startPartnerPolling();
+        } else {
+            // Partner has joined, stop polling
+            stopPartnerPolling();
+        }
 
         // Update UI Points
         state.momEnergy = data.mom.energy || 0;
@@ -219,6 +246,43 @@ async function refreshDashboard() {
 
     } catch (e) {
         console.error(e);
+    }
+}
+
+// Polling for partner join detection
+let partnerPollInterval = null;
+
+function startPartnerPolling() {
+    if (partnerPollInterval) return; // Already polling
+
+    console.log('[POLLING] Started checking for partner join...');
+    partnerPollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/dashboard?email=${encodeURIComponent(myEmail)}`);
+            const data = await res.json();
+
+            if (!data.setupNeeded) {
+                console.log('[POLLING] Partner detected! Refreshing...');
+                // Clear modal dismissal so user sees success
+                localStorage.removeItem('inviteModalDismissed');
+                // Show success message
+                alert('✅ Eşiniz aileye katıldı!');
+                // Refresh dashboard
+                await refreshDashboard();
+                // Stop polling
+                stopPartnerPolling();
+            }
+        } catch (e) {
+            console.error('[POLLING] Error:', e);
+        }
+    }, 10000); // Check every 10 seconds
+}
+
+function stopPartnerPolling() {
+    if (partnerPollInterval) {
+        console.log('[POLLING] Stopped');
+        clearInterval(partnerPollInterval);
+        partnerPollInterval = null;
     }
 }
 
