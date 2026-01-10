@@ -7,10 +7,11 @@ const path = require('path');
 const { MongoClient } = require('mongodb'); // RESTORED
 
 // CONFIG
+// CONFIG
 const PORT = process.env.PORT || 8080;
-const CLIENT_ID = process.env.CLIENT_ID || '719980821718-3su43irbr13jkdujltdejf3siuc9v89q.apps.googleusercontent.com';
+const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:8080/auth/callback';
+const REDIRECT_URI = process.env.REDIRECT_URI || 'https://yuva-enerjisi2.onrender.com/auth/callback';
 const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/userinfo.email';
 const MONGO_URI = process.env.MONGO_URI;
 
