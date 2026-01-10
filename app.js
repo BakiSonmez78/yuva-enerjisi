@@ -1,4 +1,6 @@
 // App State
+const API_BASE_URL = 'https://yuva-enerjisi2.onrender.com';
+
 const state = {
     momEnergy: 50,
     dadEnergy: 50,
@@ -160,7 +162,7 @@ function showSetupModal() {
 
     div.querySelector('#create-invite-btn').addEventListener('click', async () => {
         try {
-            const res = await fetch(`/api/invite?email=${encodeURIComponent(myEmail)}`);
+            const res = await fetch(`${API_BASE_URL}/api/invite?email=${encodeURIComponent(myEmail)}`);
             const data = await res.json();
             document.getElementById('link-text').innerText = data.url;
             document.getElementById('invite-result').style.display = 'block';
@@ -229,7 +231,7 @@ async function saveFamilySettings() {
     if (!pEmail) return alert("Lütfen eşinizin e-postasına girin.");
 
     try {
-        await fetch('/api/setup', {
+        await fetch(`${API_BASE_URL}/api/setup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -251,7 +253,7 @@ async function saveFamilySettings() {
 
 async function refreshDashboard() {
     try {
-        const res = await fetch(`/api/dashboard?email=${encodeURIComponent(myEmail)}`);
+        const res = await fetch(`${API_BASE_URL}/api/dashboard?email=${encodeURIComponent(myEmail)}`);
         const data = await res.json();
 
         hideLoginBtn(); // <--- HIDE OVERLAY HERE
@@ -302,7 +304,7 @@ function startPartnerPolling() {
     console.log('[POLLING] Started checking for partner join...');
     partnerPollInterval = setInterval(async () => {
         try {
-            const res = await fetch(`/api/dashboard?email=${encodeURIComponent(myEmail)}`);
+            const res = await fetch(`${API_BASE_URL}/api/dashboard?email=${encodeURIComponent(myEmail)}`);
             const data = await res.json();
 
             if (!data.setupNeeded) {
