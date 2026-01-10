@@ -61,7 +61,7 @@ function init() {
                 }
             }, 300);
         }
-    }, 60); // 60ms * 20 iterations = ~1.2s + 300ms = 1.5s total
+    }, 120); // 120ms * 20 iterations = ~2.4s + 300ms = ~3s total
 
     // 0. Safety Timeout: If nothing happens in 2 sec, show login (failsafe)
     setTimeout(() => {
