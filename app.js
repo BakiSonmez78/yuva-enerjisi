@@ -72,16 +72,18 @@ function init() {
     if (myEmail) {
         hideLoginBtn(); // <--- ALSO HIDE HERE
         refreshDashboard();
-        // Show User Info in header with editable name
+        // Show User Info in header with editable name (EMAIL-SPECIFIC)
         const authContainer = document.querySelector('.auth-buttons');
         if (authContainer) {
-            const displayName = localStorage.getItem('displayName') || myEmail.split('@')[0];
+            const displayName = localStorage.getItem('displayName_' + myEmail) || myEmail.split('@')[0];
             authContainer.innerHTML = `
-                <span style="font-size:0.9rem; display:flex; align-items:center; gap:5px;">
-                    👤 <span id="display-name" style="cursor:pointer;" title="İsmi düzenlemek için tıklayın">${displayName}</span>
-                    <i class="fa-solid fa-pen" style="font-size:0.7rem; color:rgba(255,255,255,0.5); cursor:pointer;" onclick="editDisplayName()"></i>
-                </span> 
-                <button class="icon-btn sm" onclick="logout()" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+                    <span style="font-size:0.9rem; display:flex; align-items:center; gap:5px;">
+                        👤 <span id="display-name" style="cursor:pointer;" title="İsmi düzenlemek için tıklayın">${displayName}</span>
+                        <i class="fa-solid fa-pen" style="font-size:0.7rem; color:rgba(255,255,255,0.5); cursor:pointer;" onclick="editDisplayName()"></i>
+                    </span>
+                    <button class="icon-btn sm" onclick="logout()" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
             `;
         }
     } else {
@@ -131,60 +133,44 @@ function hideLoginBtn() {
 }
 
 function showSetupModal() {
-    // Check if user dismissed this modal
-    if (localStorage.getItem('inviteModalDismissed') === 'true') return;
-
-    // Show Invite Button immediately instead of complex form
-    const container = document.querySelector('.container');
-    const existing = document.getElementById('invite-area');
-    if (existing) return;
-
-    const div = document.createElement('div');
-    div.id = 'invite-area';
-    div.className = 'invite-box';
-    div.innerHTML = `
-        <button class="close-btn" onclick="closeInviteModal()" style="position:absolute; top:10px; right:10px; background:transparent; border:none; color:rgba(255,255,255,0.6); font-size:1.5rem; cursor:pointer; padding:5px 10px; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">&times;</button>
-        <h3>💌 Ailenizi Tamamlayın</h3>
-        <p>Eşiniz henüz bu aileye katılmadı.</p>
-        <button id="create-invite-btn" class="btn" style="background:var(--primary); color:white; width:100%; border-radius:30px;">
-            <i class="fa-solid fa-link"></i> Davet Linki Oluştur
-        </button>
-        <div id="invite-result" style="display:none; margin-top:15px;">
-            <p style="font-size:0.8rem; color:var(--text-muted)">Bu linki eşinize gönderin:</p>
-            <div class="invite-link" id="link-text">...</div>
-            <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('link-text').innerText); alert('Kopyalandı!')" style="font-size:0.8rem; padding:5px 10px;">Kopyala</button>
-        </div>
-    `;
-
-    // Insert after header
-    const header = document.querySelector('header');
-    header.parentNode.insertBefore(div, header.nextSibling);
-
-    div.querySelector('#create-invite-btn').addEventListener('click', async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/invite?email=${encodeURIComponent(myEmail)}`);
-            const data = await res.json();
-            document.getElementById('link-text').innerText = data.url;
-            document.getElementById('invite-result').style.display = 'block';
-            document.getElementById('create-invite-btn').style.display = 'none';
-        } catch (e) { alert("Hata: " + e); }
-    });
-}
-
-// Close invite modal
-window.closeInviteModal = function () {
-    const modal = document.getElementById('invite-area');
-    if (modal) {
-        modal.remove();
-        localStorage.setItem('inviteModalDismissed', 'true');
+    // Add invite link button to header instead of popup
+    const authContainer = document.querySelector('.auth-buttons div');
+    if (authContainer && !document.getElementById('invite-btn-header')) {
+        const inviteBtn = document.createElement('button');
+        inviteBtn.id = 'invite-btn-header';
+        inviteBtn.className = 'btn';
+        inviteBtn.style.cssText = 'font-size:0.75rem; padding:4px 10px; background:var(--warning); color:white; margin-top:5px;';
+        inviteBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Eşinizi Davet Edin';
+        inviteBtn.onclick = generateInviteLink;
+        authContainer.appendChild(inviteBtn);
     }
 }
 
+// Generate and show invite link
+async function generateInviteLink() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/invite?email=${encodeURIComponent(myEmail)}`);
+        const data = await res.json();
+        const link = data.url;
+
+        // Show in a simple prompt
+        const userChoice = confirm(`Davet Linki Oluşturuldu!\n\n${link}\n\nLinki panoya kopyalamak için Tamam'a basın.`);
+        if (userChoice) {
+            navigator.clipboard.writeText(link);
+            alert('✅ Link kopyalandı! WhatsApp veya SMS ile eşinize gönderin.');
+        }
+    } catch (e) {
+        alert('Hata: ' + e);
+    }
+}
+
+// Removed old modal code
+
 // LOGOUT
 window.logout = function () {
+    // Clear user-specific data
     localStorage.removeItem('userEmail');
-    localStorage.removeItem('displayName');
-    localStorage.removeItem('inviteModalDismissed');
+    localStorage.removeItem('displayName_' + myEmail);
     window.location.href = '/';
 }
 
@@ -211,7 +197,7 @@ window.editDisplayName = function () {
 
     function saveName() {
         const newName = input.value.trim() || currentName;
-        localStorage.setItem('displayName', newName);
+        localStorage.setItem('displayName_' + myEmail, newName);
 
         const span = document.createElement('span');
         span.id = 'display-name';
