@@ -426,12 +426,25 @@ const server = http.createServer(async (req, res) => {
 
                 try {
                     const fitData = await fetchFitnessData(accessToken);
-                    let energy = 0;
+                    let energy = 50; // Default mid-range if no data
+
                     if (fitData.data.bucket && fitData.data.bucket[0]) {
                         const ds = fitData.data.bucket[0].dataset;
-                        const hp = ds[0].point[0]?.value[0]?.fpVal || 0;
+                        const heartPoints = ds[0].point[0]?.value[0]?.fpVal || 0;
                         const steps = ds[1].point[0]?.value[0]?.intVal || 0;
-                        energy = Math.min(100, Math.round((hp * 2) + (steps / 100)));
+
+                        // FATIGUE-BASED CALCULATION (Corrected Logic)
+                        // More activity = More fatigue = Less energy
+                        // 10,000 steps = ~100 fatigue points
+                        // 30 heart points = ~60 fatigue points
+                        const fatigueFromSteps = steps / 100;
+                        const fatigueFromHeart = heartPoints * 2;
+                        const totalFatigue = Math.min(90, fatigueFromSteps + fatigueFromHeart);
+
+                        // Energy = 100 - Fatigue (minimum 10 to avoid zero)
+                        energy = Math.max(10, Math.round(100 - totalFatigue));
+
+                        console.log(`[${role.toUpperCase()}] Steps: ${steps}, Heart: ${heartPoints}, Fatigue: ${totalFatigue}, Energy: ${energy}`);
                     }
                     result[role].connected = true;
                     result[role].energy = energy;
