@@ -40,6 +40,16 @@ let myEmail = localStorage.getItem('userEmail');
 function init() {
     console.log("App Initializing...");
 
+    // Hide web splash screen after 1.5 seconds
+    setTimeout(() => {
+        const splash = document.getElementById('web-splash');
+        if (splash) {
+            splash.style.opacity = '0';
+            splash.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => splash.remove(), 500);
+        }
+    }, 1500);
+
     // 0. Safety Timeout: If nothing happens in 2 sec, show login (failsafe)
     setTimeout(() => {
         const overlay = document.getElementById('login-overlay');
@@ -49,34 +59,35 @@ function init() {
             showLoginBtn();
         }
     }, 2000);
+}, 2000);
 
-    // 1. Check URL for login return
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('email')) {
-        myEmail = params.get('email');
-        localStorage.setItem('userEmail', myEmail);
+// 1. Check URL for login return
+const params = new URLSearchParams(window.location.search);
+if (params.get('email')) {
+    myEmail = params.get('email');
+    localStorage.setItem('userEmail', myEmail);
 
-        // Clean URL cleanly
-        window.history.replaceState({}, document.title, "/");
+    // Clean URL cleanly
+    window.history.replaceState({}, document.title, "/");
 
-        // Check for Joined/Setup flags
-        if (params.get('setup') === 'needed') showSetupModal();
-        if (params.get('joined') === 'true') alert("Aileye başarıyla katıldınız! Hoşgeldiniz.");
-    } else {
-        // 2. Check LocalStorage
-        const stored = localStorage.getItem('userEmail');
-        if (stored) myEmail = stored;
-    }
+    // Check for Joined/Setup flags
+    if (params.get('setup') === 'needed') showSetupModal();
+    if (params.get('joined') === 'true') alert("Aileye başarıyla katıldınız! Hoşgeldiniz.");
+} else {
+    // 2. Check LocalStorage
+    const stored = localStorage.getItem('userEmail');
+    if (stored) myEmail = stored;
+}
 
-    // 3. DECIDE: Show Dashboard or Login
-    if (myEmail) {
-        hideLoginBtn(); // <--- ALSO HIDE HERE
-        refreshDashboard();
-        // Show User Info in header with editable name (EMAIL-SPECIFIC)
-        const authContainer = document.querySelector('.auth-buttons');
-        if (authContainer) {
-            const displayName = localStorage.getItem('displayName_' + myEmail) || myEmail.split('@')[0];
-            authContainer.innerHTML = `
+// 3. DECIDE: Show Dashboard or Login
+if (myEmail) {
+    hideLoginBtn(); // <--- ALSO HIDE HERE
+    refreshDashboard();
+    // Show User Info in header with editable name (EMAIL-SPECIFIC)
+    const authContainer = document.querySelector('.auth-buttons');
+    if (authContainer) {
+        const displayName = localStorage.getItem('displayName_' + myEmail) || myEmail.split('@')[0];
+        authContainer.innerHTML = `
                 <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
                     <span style="font-size:0.9rem; display:flex; align-items:center; gap:5px;">
                         👤 <span id="display-name" style="cursor:pointer;" title="İsmi düzenlemek için tıklayın">${displayName}</span>
@@ -85,33 +96,33 @@ function init() {
                     <button class="icon-btn sm" onclick="logout()" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
             `;
-        }
-    } else {
-        showLoginBtn();
     }
+} else {
+    showLoginBtn();
+}
 
-    // Notifications
-    if ("Notification" in window && Notification.permission !== "granted") {
-        Notification.requestPermission();
-    }
+// Notifications
+if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+}
 
-    // Listeners for Setup Form
-    document.getElementById('save-family-btn')?.addEventListener('click', saveFamilySettings);
+// Listeners for Setup Form
+document.getElementById('save-family-btn')?.addEventListener('click', saveFamilySettings);
 
-    // Sliders
-    if (simMomSlider) simMomSlider.addEventListener('input', (e) => simMomValDisp.textContent = e.target.value);
-    if (simDadSlider) simDadSlider.addEventListener('input', (e) => simDadValDisp.textContent = e.target.value);
+// Sliders
+if (simMomSlider) simMomSlider.addEventListener('input', (e) => simMomValDisp.textContent = e.target.value);
+if (simDadSlider) simDadSlider.addEventListener('input', (e) => simDadValDisp.textContent = e.target.value);
 
-    // Manual Update
-    if (updateBtn) {
-        updateBtn.addEventListener('click', () => {
-            state.momEnergy = parseInt(simMomSlider.value);
-            state.dadEnergy = parseInt(simDadSlider.value);
-            updateUI();
-            generateNotifications();
-            addNotification("Manuel veri girişi yapıldı.", "warning");
-        });
-    }
+// Manual Update
+if (updateBtn) {
+    updateBtn.addEventListener('click', () => {
+        state.momEnergy = parseInt(simMomSlider.value);
+        state.dadEnergy = parseInt(simDadSlider.value);
+        updateUI();
+        generateNotifications();
+        addNotification("Manuel veri girişi yapıldı.", "warning");
+    });
+}
 }
 
 function showLoginBtn() {
