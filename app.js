@@ -138,6 +138,12 @@ function init() {
 }
 
 function showLoginBtn() {
+    // If splash screen is still visible, wait for it
+    if (document.getElementById('web-splash')) {
+        setTimeout(showLoginBtn, 500); // Retry after 500ms
+        return;
+    }
+
     // Make sure overlay is visible
     const overlay = document.getElementById('login-overlay');
     if (overlay) overlay.style.display = 'flex';
