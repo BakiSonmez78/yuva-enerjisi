@@ -433,18 +433,17 @@ const server = http.createServer(async (req, res) => {
                         const heartPoints = ds[0].point[0]?.value[0]?.fpVal || 0;
                         const steps = ds[1].point[0]?.value[0]?.intVal || 0;
 
-                        // FATIGUE-BASED CALCULATION (Corrected Logic)
-                        // More activity = More fatigue = Less energy
-                        // 10,000 steps = ~100 fatigue points
-                        // 30 heart points = ~60 fatigue points
-                        const fatigueFromSteps = steps / 100;
-                        const fatigueFromHeart = heartPoints * 2;
+                        // REALISTIC FATIGUE CALCULATION
+                        // Target: 10,000 steps = 50 fatigue, 100 heart points = 40 fatigue
+                        // Light day (2000 steps, 7 heart) should be ~13 fatigue → 87% energy
+                        const fatigueFromSteps = (steps / 200);     // 10,000 steps = 50
+                        const fatigueFromHeart = (heartPoints * 0.4); // 100 heart = 40
                         const totalFatigue = Math.min(90, fatigueFromSteps + fatigueFromHeart);
 
                         // Energy = 100 - Fatigue (minimum 10 to avoid zero)
                         energy = Math.max(10, Math.round(100 - totalFatigue));
 
-                        console.log(`[${role.toUpperCase()}] Steps: ${steps}, Heart: ${heartPoints}, Fatigue: ${totalFatigue}, Energy: ${energy}`);
+                        console.log(`[${role.toUpperCase()}] Steps: ${steps}, Heart: ${heartPoints}, Fatigue: ${Math.round(totalFatigue)}, Energy: ${energy}%`);
                     }
                     result[role].connected = true;
                     result[role].energy = energy;
