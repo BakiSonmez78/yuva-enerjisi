@@ -443,6 +443,36 @@ function updateUI() {
         statusMsg.textContent = "Süper Enerjik Aile!";
         statusMsg.style.color = "var(--success)";
     }
+
+    // 4. Smart Gift Suggestion (For Dad, if Mom < 30)
+    const stored = localStorage.getItem('familyData') ? JSON.parse(localStorage.getItem('familyData')) : {};
+    // Check if current user is Dad (we can infer from role stored or logic)
+    // Simplified: Show if Mom is low, regardless of who is looking, OR strictly for Dad
+    // Let's make it strictly for Dad if we can find role, otherwise show generally
+    const myRole = localStorage.getItem('userRole'); // We set this in login
+
+    // Add or remove button container
+    let giftContainer = document.getElementById('gift-container');
+    if (!giftContainer) {
+        giftContainer = document.createElement('div');
+        giftContainer.id = 'gift-container';
+        // Insert after Mom's card content
+        const momCard = document.querySelector('.card h2').parentElement; // Mom is usually first card
+        if (momCard) momCard.appendChild(giftContainer);
+    }
+
+    // Logic: If Mom Energy <= 30
+    if (state.momEnergy <= 30) {
+        giftContainer.innerHTML = `
+            <a href="https://www.ciceksepeti.com/cicek" target="_blank" class="gift-suggestion-btn">
+                <i class="fas fa-gift"></i> Anneyi Mutlu Et 🌸
+            </a>
+        `;
+        giftContainer.style.display = 'block';
+    } else {
+        giftContainer.style.display = 'none';
+        giftContainer.innerHTML = '';
+    }
 }
 
 function setColor(element, value) {
