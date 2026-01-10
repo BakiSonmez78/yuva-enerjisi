@@ -240,6 +240,13 @@ const server = http.createServer(async (req, res) => {
 
         // 2. AUTH CALLBACK
         if (parsedUrl.pathname === '/auth/callback') {
+            const error = parsedUrl.query.error;
+            if (error) {
+                res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end(`<h1>Giriş Hatası</h1><p>Google'dan hata döndü: <strong>${error}</strong></p><p><a href="/">Ana Sayfaya Dön</a></p>`);
+                return;
+            }
+
             const code = parsedUrl.query.code;
             const state = parsedUrl.query.state || '';
 
