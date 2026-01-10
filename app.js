@@ -40,15 +40,28 @@ let myEmail = localStorage.getItem('userEmail');
 function init() {
     console.log("App Initializing...");
 
-    // Hide web splash screen after 1.5 seconds
-    setTimeout(() => {
-        const splash = document.getElementById('web-splash');
-        if (splash) {
-            splash.style.opacity = '0';
-            splash.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => splash.remove(), 500);
+    // Animate loading bar and hide splash screen after 3 seconds
+    const loadingBar = document.getElementById('loading-bar');
+    let progress = 0;
+
+    const loadingInterval = setInterval(() => {
+        progress += 5;
+        if (loadingBar) loadingBar.style.width = progress + '%';
+
+        if (progress >= 100) {
+            clearInterval(loadingInterval);
+
+            // Wait a bit then hide splash
+            setTimeout(() => {
+                const splash = document.getElementById('web-splash');
+                if (splash) {
+                    splash.style.opacity = '0';
+                    splash.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => splash.remove(), 500);
+                }
+            }, 300);
         }
-    }, 1500);
+    }, 60); // 60ms * 20 iterations = ~1.2s + 300ms = 1.5s total
 
     // 0. Safety Timeout: If nothing happens in 2 sec, show login (failsafe)
     setTimeout(() => {
