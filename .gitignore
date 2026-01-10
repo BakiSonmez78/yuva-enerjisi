@@ -1,4 +1,7 @@
 node_modules/
-tokens.json
-.env
+android/
+capacitor.config.json
+package-lock.json
+www/
 .DS_Store
+*.log
