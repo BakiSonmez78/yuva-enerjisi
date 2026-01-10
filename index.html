@@ -118,8 +118,8 @@
         </main>
     </div>
 
-    <!-- Login Overlay (Visible by default) -->
-    <div id="login-overlay" class="login-overlay">
+    <!-- Login Overlay (Hidden by default until splash finishes) -->
+    <div id="login-overlay" class="login-overlay" style="display:none;">
         <div class="login-card">
             <div style="font-size: 3rem; margin-bottom:10px;">🏠</div>
             <h2>Yuva Enerjisi</h2>
@@ -131,24 +131,6 @@
         </div>
     </div>
 
-    <!-- CRITICAL: Immediate hide if logged in -->
-    <script>
-        (function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const hasEmailParam = urlParams.get('email');
-            const hasStoredEmail = localStorage.getItem('userEmail');
-
-            if (hasEmailParam || hasStoredEmail) {
-                console.log('[IMMEDIATE] Hiding login overlay - User detected');
-                const overlay = document.getElementById('login-overlay');
-                const container = document.querySelector('.container');
-                if (overlay) overlay.style.display = 'none';
-                if (container) container.style.filter = 'none';
-            } else {
-                console.log('[IMMEDIATE] Showing login overlay - No user found');
-            }
-        })();
-    </script>
 
     <script src="app.js"></script>
 </body>
