@@ -40,28 +40,35 @@ let myEmail = localStorage.getItem('userEmail');
 function init() {
     console.log("App Initializing...");
 
-    // Animate loading bar and hide splash screen after 3 seconds
-    const loadingBar = document.getElementById('loading-bar');
-    let progress = 0;
+    // 0. QUICK CHECK: If returning from Google Login, SKIP SPLASH
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('email') || params.get('code')) {
+        const splash = document.getElementById('web-splash');
+        if (splash) splash.style.display = 'none';
+    } else {
+        // Normal Launch: Show Splash
+        const loadingBar = document.getElementById('loading-bar');
+        let progress = 0;
 
-    const loadingInterval = setInterval(() => {
-        progress += 5;
-        if (loadingBar) loadingBar.style.width = progress + '%';
+        const loadingInterval = setInterval(() => {
+            progress += 5;
+            if (loadingBar) loadingBar.style.width = progress + '%';
 
-        if (progress >= 100) {
-            clearInterval(loadingInterval);
+            if (progress >= 100) {
+                clearInterval(loadingInterval);
+                setTimeout(() => {
+                    const splash = document.getElementById('web-splash');
+                    if (splash) {
+                        splash.style.opacity = '0';
+                        splash.style.transition = 'opacity 0.5s ease';
+                        setTimeout(() => splash.remove(), 500);
+                    }
+                }, 300);
+            }
+        }, 60); // Faster splash (60ms * 20 = 1.2s)
+    }
 
-            // Wait a bit then hide splash
-            setTimeout(() => {
-                const splash = document.getElementById('web-splash');
-                if (splash) {
-                    splash.style.opacity = '0';
-                    splash.style.transition = 'opacity 0.5s ease';
-                    setTimeout(() => splash.remove(), 500);
-                }
-            }, 300);
-        }
-    }, 120); // 120ms * 20 iterations = ~2.4s + 300ms = ~3s total
+    // 0. Safety Timeout: If nothing happens in 2 sec, show login (failsafe)
 
     // 0. Safety Timeout: If nothing happens in 2 sec, show login (failsafe)
     setTimeout(() => {
