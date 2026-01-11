@@ -453,34 +453,50 @@ function updateUI() {
         statusMsg.style.color = "var(--success)";
     }
 
-    // 4. Smart Gift Suggestion (For Dad, if Mom < 30)
-    const stored = localStorage.getItem('familyData') ? JSON.parse(localStorage.getItem('familyData')) : {};
-    // Check if current user is Dad (we can infer from role stored or logic)
-    // Simplified: Show if Mom is low, regardless of who is looking, OR strictly for Dad
-    // Let's make it strictly for Dad if we can find role, otherwise show generally
-    const myRole = localStorage.getItem('userRole'); // We set this in login
 
-    // Add or remove button container
-    let giftContainer = document.getElementById('gift-container');
-    if (!giftContainer) {
-        giftContainer = document.createElement('div');
-        giftContainer.id = 'gift-container';
-        // Insert after Mom's card content
-        const momCard = document.querySelector('.card h2').parentElement; // Mom is usually first card
-        if (momCard) momCard.appendChild(giftContainer);
+    // 4. Smart Gift Logic
+    updateGiftButton('mom', state.momEnergy, 'Anneyi Mutlu Et 🌸', 'https://www.ciceksepeti.com/cicek');
+    updateGiftButton('dad', state.dadEnergy, 'Babayı Mutlu Et 🎁', 'https://www.ciceksepeti.com/hediye-erkege');
+}
+
+function updateGiftButton(role, energy, text, link) {
+    // Debug log
+    console.log(`Checking Gift Button for ${role}: Energy=${energy}`);
+
+    const cardInfo = document.querySelector(`.person-card.${role} .info`);
+    if (!cardInfo) {
+        console.error("Card info not found for", role);
+        return;
     }
 
-    // Logic: If Mom Energy <= 30
-    if (state.momEnergy <= 30) {
-        giftContainer.innerHTML = `
-            <a href="https://www.ciceksepeti.com/cicek" target="_blank" class="gift-suggestion-btn">
-                <i class="fas fa-gift"></i> Anneyi Mutlu Et 🌸
-            </a>
-        `;
-        giftContainer.style.display = 'block';
+    let btnId = `gift-btn-${role}`;
+    let btn = document.getElementById(btnId);
+
+    if (energy <= 30) {
+        if (!btn) {
+            console.log("Creating new gift button for", role);
+            btn = document.createElement('a');
+            btn.id = btnId;
+            btn.className = 'gift-suggestion-btn';
+            btn.target = '_blank';
+            btn.innerHTML = `<i class="fas fa-gift"></i> ${text}`;
+            btn.style.marginTop = '15px';
+            btn.style.display = 'block';
+            btn.style.background = '#e91e63'; // Force color
+            btn.style.color = 'white';
+            btn.style.padding = '10px';
+            btn.style.borderRadius = '5px';
+            btn.style.textDecoration = 'none';
+            btn.style.zIndex = "9999";
+            cardInfo.appendChild(btn);
+
+            // Temporary Alert to confirm logic execution
+            // alert(`${role === 'mom' ? 'Anne' : 'Baba'} için hediye butonu oluşturuldu!`);
+        }
+        btn.href = link;
+        btn.style.display = 'block';
     } else {
-        giftContainer.style.display = 'none';
-        giftContainer.innerHTML = '';
+        if (btn) btn.style.display = 'none';
     }
 }
 
