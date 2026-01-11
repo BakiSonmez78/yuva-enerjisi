@@ -38,7 +38,8 @@ let myEmail = localStorage.getItem('userEmail');
 // Initialization
 // INIT
 function init() {
-    console.log("App Initializing...");
+    console.log("App Initializing... V3 (Debug)");
+    // alert("App V3 Loaded"); // Uncomment if needed for clearer check
 
     // 0. QUICK CHECK: If returning from Google Login, SKIP SPLASH
     const params = new URLSearchParams(window.location.search);
