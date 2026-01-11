@@ -479,7 +479,7 @@ function updateGiftButtons(role, energy) {
             flowerBtn.className = 'gift-btn';
             flowerBtn.target = '_blank';
             flowerBtn.href = 'https://www.ciceksepeti.com/cicek';
-            flowerBtn.innerHTML = `<i class="fas fa-flower"></i> Çiçek Gönder`;
+            flowerBtn.innerHTML = `🌸 Çiçek Gönder`;
             flowerBtn.style.cssText = 'flex: 1; min-width: 120px; background: linear-gradient(135deg, #e91e63, #f06292); color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; text-align: center; box-shadow: 0 2px 8px rgba(233,30,99,0.3); transition: transform 0.2s;';
             flowerBtn.onmouseover = () => flowerBtn.style.transform = 'translateY(-2px)';
             flowerBtn.onmouseout = () => flowerBtn.style.transform = 'translateY(0)';
