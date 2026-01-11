@@ -454,49 +454,52 @@ function updateUI() {
     }
 
 
-    // 4. Smart Gift Logic
-    updateGiftButton('mom', state.momEnergy, 'Anneyi Mutlu Et 🌸', 'https://www.ciceksepeti.com/cicek');
-    updateGiftButton('dad', state.dadEnergy, 'Babayı Mutlu Et 🎁', 'https://www.ciceksepeti.com/hediye-erkege');
+
+    // 4. Smart Gift Logic - Dual Options
+    updateGiftButtons('mom', state.momEnergy);
+    updateGiftButtons('dad', state.dadEnergy);
 }
 
-function updateGiftButton(role, energy, text, link) {
-    // Debug log
-    console.log(`Checking Gift Button for ${role}: Energy=${energy}`);
-
+function updateGiftButtons(role, energy) {
     const cardInfo = document.querySelector(`.person-card.${role} .info`);
-    if (!cardInfo) {
-        console.error("Card info not found for", role);
-        return;
-    }
+    if (!cardInfo) return;
 
-    let btnId = `gift-btn-${role}`;
-    let btn = document.getElementById(btnId);
+    const containerId = `gift-container-${role}`;
+    let container = document.getElementById(containerId);
 
     if (energy <= 30) {
-        if (!btn) {
-            console.log("Creating new gift button for", role);
-            btn = document.createElement('a');
-            btn.id = btnId;
-            btn.className = 'gift-suggestion-btn';
-            btn.target = '_blank';
-            btn.innerHTML = `<i class="fas fa-gift"></i> ${text}`;
-            btn.style.marginTop = '15px';
-            btn.style.display = 'block';
-            btn.style.background = '#e91e63'; // Force color
-            btn.style.color = 'white';
-            btn.style.padding = '10px';
-            btn.style.borderRadius = '5px';
-            btn.style.textDecoration = 'none';
-            btn.style.zIndex = "9999";
-            cardInfo.appendChild(btn);
+        if (!container) {
+            container = document.createElement('div');
+            container.id = containerId;
+            container.style.cssText = 'display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;';
+            cardInfo.appendChild(container);
 
-            // Temporary Alert to confirm logic execution
-            // alert(`${role === 'mom' ? 'Anne' : 'Baba'} için hediye butonu oluşturuldu!`);
+            // Çiçek Butonu
+            const flowerBtn = document.createElement('a');
+            flowerBtn.className = 'gift-btn';
+            flowerBtn.target = '_blank';
+            flowerBtn.href = 'https://www.ciceksepeti.com/cicek';
+            flowerBtn.innerHTML = `<i class="fas fa-flower"></i> Çiçek Gönder`;
+            flowerBtn.style.cssText = 'flex: 1; min-width: 120px; background: linear-gradient(135deg, #e91e63, #f06292); color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; text-align: center; box-shadow: 0 2px 8px rgba(233,30,99,0.3); transition: transform 0.2s;';
+            flowerBtn.onmouseover = () => flowerBtn.style.transform = 'translateY(-2px)';
+            flowerBtn.onmouseout = () => flowerBtn.style.transform = 'translateY(0)';
+
+            // Kahve Butonu
+            const coffeeBtn = document.createElement('a');
+            coffeeBtn.className = 'gift-btn';
+            coffeeBtn.target = '_blank';
+            coffeeBtn.href = 'https://www.starbucks.com.tr/';
+            coffeeBtn.innerHTML = `<i class="fas fa-coffee"></i> Kahve Gönder`;
+            coffeeBtn.style.cssText = 'flex: 1; min-width: 120px; background: linear-gradient(135deg, #00704A, #008248); color: white; padding: 10px 12px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; text-align: center; box-shadow: 0 2px 8px rgba(0,112,74,0.3); transition: transform 0.2s;';
+            coffeeBtn.onmouseover = () => coffeeBtn.style.transform = 'translateY(-2px)';
+            coffeeBtn.onmouseout = () => coffeeBtn.style.transform = 'translateY(0)';
+
+            container.appendChild(flowerBtn);
+            container.appendChild(coffeeBtn);
         }
-        btn.href = link;
-        btn.style.display = 'block';
+        container.style.display = 'flex';
     } else {
-        if (btn) btn.style.display = 'none';
+        if (container) container.style.display = 'none';
     }
 }
 
