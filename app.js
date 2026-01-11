@@ -528,5 +528,55 @@ function addNotification(msg, type) {
     notifList.appendChild(div);
 }
 
+
+// Helper: Send System Notification (Web & Android)
+async function sendSystemNotification(title, body) {
+    console.log("Attempting notification:", title);
+
+    // 1. Check Permission Logic
+    let hasPermission = false;
+
+    // Check Web/Native Permission
+    if ("Notification" in window) {
+        if (Notification.permission === "granted") {
+            hasPermission = true;
+        } else if (Notification.permission !== "denied") {
+            const permission = await Notification.requestPermission();
+            hasPermission = permission === "granted";
+        }
+    }
+
+    if (!hasPermission) {
+        console.warn("Notification permission denied");
+        return;
+    }
+
+    // 2. Platform Specific Sending
+    try {
+        // Only run Capacitor logic if available globally (script loaded)
+        // Note: In typical script tag usage, Capacitor is global via window.Capacitor
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            // Android / Native
+            /* 
+              We need to dynamically access the plugin since we are not using import syntax 
+              in this vanilla JS setup without bundlers.
+              Capacitor 5+ usually exposes Plugins.LocalNotifications globally if included properly,
+              but we might need to rely on the side-effect of the npm package.
+              Since we don't have a bundler, we will rely on standard Web API for now inside the WebView,
+              BUT standard Web API support in Android WebView is tricky.
+              
+              Let's try standard API first as it's simplest for this architecture.
+              If it fails, we assume user is testing on Web/Render mostly.
+            */
+            const notif = new Notification(title, { body: body, icon: 'assets/icon/icon.png' });
+        } else {
+            // Web / Render
+            new Notification(title, { body: body });
+        }
+    } catch (e) {
+        console.error("Notification Error:", e);
+    }
+}
+
 // Start
 init();

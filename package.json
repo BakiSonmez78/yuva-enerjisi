@@ -11,7 +11,11 @@
         "express": "^4.18.2",
         "google-auth-library": "^9.0.0",
         "mongodb": "^6.3.0",
-        "open": "^9.1.0"
+        "open": "^9.1.0",
+        "@capacitor/core": "^5.5.1",
+        "@capacitor/android": "^5.5.1",
+        "@capacitor/cli": "^5.5.1",
+        "@capacitor/browser": "^5.1.0"
     },
     "engines": {
         "node": ">=18.0.0"
