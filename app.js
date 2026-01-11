@@ -81,7 +81,8 @@ function init() {
     }, 2000);
 
     // 1. Check URL for login return
-    const params = new URLSearchParams(window.location.search);
+    // 1. Check URL for login return
+    // params is already defined above
     if (params.get('email')) {
         myEmail = params.get('email');
         localStorage.setItem('userEmail', myEmail);
