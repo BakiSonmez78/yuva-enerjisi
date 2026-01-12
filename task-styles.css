@@ -1,0 +1,85 @@
+/* Task Categories */
+.task-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.task-category {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(108, 92, 231, 0.2);
+}
+
+.task-category h4 {
+    margin: 0 0 12px 0;
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.task-category label {
+    display: block;
+    margin: 8px 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    transition: all 0.2s;
+}
+
+.task-category label:hover {
+    color: var(--primary-color);
+    transform: translateX(5px);
+}
+
+.task-check {
+    margin-right: 8px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* Mood & Health Sections */
+.mood-section,
+.health-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(108, 92, 231, 0.2);
+}
+
+.mood-section h4,
+.health-section h4 {
+    margin: 0 0 10px 0;
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.mood-select,
+.health-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid rgba(108, 92, 231, 0.3);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.mood-select:hover,
+.health-select:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(108, 92, 231, 0.2);
+}
+
+.mood-select:focus,
+.health-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}

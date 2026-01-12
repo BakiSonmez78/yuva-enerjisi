@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="task-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -102,22 +103,86 @@
                 </div>
             </section>
 
-            <!-- DEBUG / SIMULATION TOOLS -->
+
+            <!-- DAILY ACTIVITY TRACKER -->
             <section class="simulation-tools">
-                <h3><i class="fa-solid fa-flask"></i> Simülasyon Araçları</h3>
-                <p>Google Fit verisi yerine buradan test edebilirsiniz:</p>
-                <div class="slider-group">
-                    <label>Anne Yorgunluk (Enerji): <span id="sim-mom-val">50</span></label>
-                    <input type="range" id="sim-mom" min="0" max="100" value="50">
+                <h3><i class="fa-solid fa-clipboard-check"></i> Bugün Neler Yaptınız?</h3>
+                <p>Yaptığınız işleri seçin, enerjiniz otomatik güncellensin:</p>
+
+                <!-- Görevler -->
+                <div class="task-categories">
+                    <div class="task-category">
+                        <h4>🏠 Ev İşleri</h4>
+                        <label><input type="checkbox" class="task-check" data-energy="30"> Kapsamlı Ütü (-30)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="25"> Genel Ev Temizliği
+                            (-25)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="20"> Yemek Pişirme (-20)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="15"> Bulaşık Yıkama (-15)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="15"> Çamaşır Yıkama (-15)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="10"> Alışveriş (-10)</label>
+                    </div>
+
+                    <div class="task-category">
+                        <h4>👶 Çocuk Bakımı</h4>
+                        <label><input type="checkbox" class="task-check" data-energy="25"> Gece Uykusuzluğu
+                            (-25)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="20"> Ödev Yardımı (-20)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="15"> Okula Götür/Getir
+                            (-15)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="10"> Oyun Oynama (-10)</label>
+                    </div>
+
+                    <div class="task-category">
+                        <h4>💼 İş & Dışarı</h4>
+                        <label><input type="checkbox" class="task-check" data-energy="35"> Yoğun İş Günü (-35)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="20"> Toplantılar (-20)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="15"> Araba Kullanma (Uzun)
+                            (-15)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="10"> Bankacılık/Resmi İşler
+                            (-10)</label>
+                    </div>
+
+                    <div class="task-category">
+                        <h4>🔧 Tamir & Bakım</h4>
+                        <label><input type="checkbox" class="task-check" data-energy="30"> Araba Bakımı (-30)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="25"> Ev Tamiri (-25)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="15"> Bahçe İşleri (-15)</label>
+                        <label><input type="checkbox" class="task-check" data-energy="10"> Küçük Tamirat (-10)</label>
+                    </div>
                 </div>
-                <div class="slider-group">
-                    <label>Baba Yorgunluk (Enerji): <span id="sim-dad-val">50</span></label>
-                    <input type="range" id="sim-dad" min="0" max="100" value="50">
+
+                <!-- Moral Durumu -->
+                <div class="mood-section">
+                    <h4>😊 Bugün Ruh Haliniz Nasıl?</h4>
+                    <select id="mood-select" class="mood-select">
+                        <option value="0">😊 Harika (+0)</option>
+                        <option value="10">🙂 İyi (+0)</option>
+                        <option value="15">😐 Normal (-15)</option>
+                        <option value="25">😔 Moral Düşük (-25)</option>
+                        <option value="35">😢 Çok Kötü (-35)</option>
+                    </select>
                 </div>
-                <button class="primary-btn" id="simulate-update">Durumu Güncelle</button>
+
+                <!-- Sağlık Durumu -->
+                <div class="health-section">
+                    <h4>🏥 Sağlık Durumunuz?</h4>
+                    <select id="health-select" class="health-select">
+                        <option value="0">💪 Sağlıklı (+0)</option>
+                        <option value="15">🤧 Hafif Rahatsız (-15)</option>
+                        <option value="30">🤒 Grip/Soğuk Algınlığı (-30)</option>
+                        <option value="50">😷 Ağır Hastalık (-50)</option>
+                        <option value="70">🤕 Migren/Şiddetli Ağrı (-70)</option>
+                    </select>
+                </div>
+
+                <button class="primary-btn" id="update-my-status">Durumumu Güncelle</button>
+                <p style="font-size: 0.85rem; color: #636E72; margin-top: 10px;">
+                    💡 Not: Sadece kendi enerjinizi güncelleyebilirsiniz. Eşinizin enerjisi otomatik senkronize olur.
+                </p>
             </section>
         </main>
     </div>
+
 
     <!-- Login Overlay (Hidden by default until splash finishes) -->
     <div id="login-overlay" class="login-overlay" style="display:none;">

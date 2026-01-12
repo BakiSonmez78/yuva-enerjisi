@@ -130,19 +130,84 @@ function init() {
     // Listeners for Setup Form
     document.getElementById('save-family-btn')?.addEventListener('click', saveFamilySettings);
 
-    // Sliders
-    if (simMomSlider) simMomSlider.addEventListener('input', (e) => simMomValDisp.textContent = e.target.value);
-    if (simDadSlider) simDadSlider.addEventListener('input', (e) => simDadValDisp.textContent = e.target.value);
+    // NEW: Task-Based Energy System
+    const updateMyStatusBtn = document.getElementById('update-my-status');
+    if (updateMyStatusBtn) {
+        updateMyStatusBtn.addEventListener('click', updateMyEnergyFromTasks);
+    }
+}
 
-    // Manual Update
-    if (updateBtn) {
-        updateBtn.addEventListener('click', () => {
-            state.momEnergy = parseInt(simMomSlider.value);
-            state.dadEnergy = parseInt(simDadSlider.value);
-            updateUI();
-            generateNotifications();
-            addNotification("Manuel veri girişi yapıldı.", "warning");
+// NEW: Calculate energy based on tasks, mood, and health
+async function updateMyEnergyFromTasks() {
+    if (!myEmail) {
+        alert("Lütfen önce giriş yapın!");
+        return;
+    }
+
+    // Get user's role from backend
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/dashboard?email=${encodeURIComponent(myEmail)}`);
+        const data = await res.json();
+
+        if (!data.found || data.setupNeeded) {
+            alert("Lütfen önce aile kurulumunu tamamlayın!");
+            return;
+        }
+
+        // Determine my role
+        const myRole = data.mom.email === myEmail ? 'mom' : 'dad';
+
+        // Calculate energy loss from tasks
+        let energyLoss = 0;
+        const taskCheckboxes = document.querySelectorAll('.task-check:checked');
+        taskCheckboxes.forEach(checkbox => {
+            energyLoss += parseInt(checkbox.getAttribute('data-energy'));
         });
+
+        // Add mood penalty
+        const moodSelect = document.getElementById('mood-select');
+        energyLoss += parseInt(moodSelect.value);
+
+        // Add health penalty
+        const healthSelect = document.getElementById('health-select');
+        energyLoss += parseInt(healthSelect.value);
+
+        // Calculate final energy (start from 100, subtract losses)
+        const finalEnergy = Math.max(0, 100 - energyLoss);
+
+        // Update state
+        if (myRole === 'mom') {
+            state.momEnergy = finalEnergy;
+        } else {
+            state.dadEnergy = finalEnergy;
+        }
+
+        // Update backend
+        await fetch(`${API_BASE_URL}/api/update-energy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: myEmail,
+                energy: finalEnergy
+            })
+        });
+
+        // Update UI
+        updateUI();
+        generateNotifications();
+
+        // Show summary
+        const taskCount = taskCheckboxes.length;
+        addNotification(`✅ Güncellendi: ${taskCount} görev, Enerji: %${finalEnergy}`, "success");
+
+        // Uncheck all tasks for next time
+        taskCheckboxes.forEach(cb => cb.checked = false);
+        moodSelect.selectedIndex = 0;
+        healthSelect.selectedIndex = 0;
+
+    } catch (e) {
+        console.error(e);
+        alert("Hata: " + e.message);
     }
 }
 

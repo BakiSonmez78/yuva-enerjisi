@@ -448,13 +448,22 @@ const server = http.createServer(async (req, res) => {
                         const fatigueFromHeart = (heartPoints * 0.4); // 100 heart = 40
                         const totalFatigue = Math.min(90, fatigueFromSteps + fatigueFromHeart);
 
+
                         // Energy = 100 - Fatigue (minimum 10 to avoid zero)
                         energy = Math.max(10, Math.round(100 - totalFatigue));
 
                         console.log(`[${role.toUpperCase()}] Steps: ${steps}, Heart: ${heartPoints}, Fatigue: ${Math.round(totalFatigue)}, Energy: ${energy}%`);
                     }
+
+                    // Override with manual energy if set
+                    if (family.manual_energy && family.manual_energy[role] !== undefined) {
+                        energy = family.manual_energy[role];
+                        console.log(`[${role.toUpperCase()}] Using manual energy: ${energy}%`);
+                    }
+
                     result[role].connected = true;
                     result[role].energy = energy;
+                    result[role].email = family[`${type}_email`]; // Add email for role detection
                 } catch (e) {
                     console.error("Fetch Fail", e);
                 }
@@ -463,6 +472,48 @@ const server = http.createServer(async (req, res) => {
             await Promise.all([processMember('owner'), processMember('partner')]);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(result));
+            return;
+        }
+
+        // NEW: Update Energy Endpoint
+        if (parsedUrl.pathname === '/api/update-energy') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', async () => {
+                try {
+                    const { email, energy } = JSON.parse(body);
+                    if (!email || energy === undefined) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ error: 'Missing email or energy' }));
+                        return;
+                    }
+
+                    const family = await findFamilyByEmail(email);
+                    if (!family) {
+                        res.writeHead(404);
+                        res.end(JSON.stringify({ error: 'Family not found' }));
+                        return;
+                    }
+
+                    // Determine which member is updating
+                    const isOwner = family.owner_email === email;
+                    const memberType = isOwner ? 'owner' : 'partner';
+                    const role = family.roles[memberType];
+
+                    // Store energy in family document
+                    const updateField = `manual_energy.${role}`;
+                    await updateFamily({ _id: family._id }, {
+                        $set: { [updateField]: energy }
+                    });
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, energy, role }));
+                } catch (e) {
+                    console.error('Update energy error:', e);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ error: e.message }));
+                }
+            });
             return;
         }
 
