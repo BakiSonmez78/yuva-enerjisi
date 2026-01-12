@@ -2,8 +2,8 @@
 const API_BASE_URL = 'https://yuva-enerjisi2.onrender.com';
 
 const state = {
-    momEnergy: 50,
-    dadEnergy: 50,
+    momEnergy: 100,
+    dadEnergy: 100,
     targetTotal: 100
 };
 

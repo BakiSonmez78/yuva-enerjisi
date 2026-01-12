@@ -412,8 +412,8 @@ const server = http.createServer(async (req, res) => {
             const result = {
                 found: true,
                 setupNeeded: !family.partner_email,
-                mom: { connected: false, energy: 0 },
-                dad: { connected: false, energy: 0 }
+                mom: { connected: false, energy: 100 },
+                dad: { connected: false, energy: 100 }
             };
 
             async function processMember(type) {
@@ -434,7 +434,7 @@ const server = http.createServer(async (req, res) => {
 
                 try {
                     const fitData = await fetchFitnessData(accessToken);
-                    let energy = 50; // Default mid-range if no data
+                    let energy = 100; // Default full energy if no data
 
                     if (fitData.data.bucket && fitData.data.bucket[0]) {
                         const ds = fitData.data.bucket[0].dataset;
