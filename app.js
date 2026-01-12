@@ -360,8 +360,9 @@ async function refreshDashboard() {
             // Start polling to detect when partner joins
             startPartnerPolling();
         } else {
-            // Partner has joined, stop polling
+            // Partner has joined, stop partner polling but start energy polling
             stopPartnerPolling();
+            startEnergyPolling(); // NEW: Continuous sync
         }
 
         // Update UI Points
@@ -418,6 +419,47 @@ function stopPartnerPolling() {
         console.log('[POLLING] Stopped');
         clearInterval(partnerPollInterval);
         partnerPollInterval = null;
+    }
+}
+
+// NEW: Energy Polling for Real-Time Sync
+let energyPollInterval = null;
+
+function startEnergyPolling() {
+    if (energyPollInterval) return; // Already polling
+
+    console.log('[ENERGY SYNC] Started continuous energy sync...');
+    energyPollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/dashboard?email=${encodeURIComponent(myEmail)}`);
+            const data = await res.json();
+
+            if (data.found && !data.setupNeeded) {
+                // Update energy values silently
+                const oldMomEnergy = state.momEnergy;
+                const oldDadEnergy = state.dadEnergy;
+
+                state.momEnergy = data.mom.energy || 0;
+                state.dadEnergy = data.dad.energy || 0;
+
+                // Only update UI if values changed
+                if (oldMomEnergy !== state.momEnergy || oldDadEnergy !== state.dadEnergy) {
+                    console.log('[ENERGY SYNC] Energy updated - Mom:', state.momEnergy, 'Dad:', state.dadEnergy);
+                    updateUI();
+                    generateNotifications();
+                }
+            }
+        } catch (e) {
+            console.error('[ENERGY SYNC] Error:', e);
+        }
+    }, 5000); // Check every 5 seconds for real-time feel
+}
+
+function stopEnergyPolling() {
+    if (energyPollInterval) {
+        console.log('[ENERGY SYNC] Stopped');
+        clearInterval(energyPollInterval);
+        energyPollInterval = null;
     }
 }
 
