@@ -4,19 +4,129 @@
     position: fixed;
     z-index: 1000;
     pointer-events: none;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    image-rendering: auto;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
     transition: transform 0.1s ease-out;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 .pet.cat {
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
 }
 
 .pet.dog {
-    width: 55px;
-    height: 55px;
+    width: 75px;
+    height: 75px;
+}
+
+/* Walking animation - subtle bounce */
+.pet.walking {
+    animation: walkBounce 0.6s ease-in-out infinite;
+}
+
+@keyframes walkBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scaleY(1);
+    }
+
+    50% {
+        transform: translateY(-3px) scaleY(0.98);
+    }
+}
+
+/* Running animation - faster bounce */
+.pet.running {
+    animation: runBounce 0.3s ease-in-out infinite;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) blur(0.3px);
+}
+
+@keyframes runBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scaleY(1) scaleX(1.05);
+    }
+
+    50% {
+        transform: translateY(-5px) scaleY(0.95) scaleX(1.1);
+    }
+}
+
+/* Scratching animation - wiggle */
+.pet.scratching {
+    animation: scratch 0.4s ease-in-out infinite;
+}
+
+@keyframes scratch {
+
+    0%,
+    100% {
+        transform: rotate(0deg) scaleX(1);
+    }
+
+    25% {
+        transform: rotate(-5deg) scaleX(0.95);
+    }
+
+    75% {
+        transform: rotate(5deg) scaleX(0.95);
+    }
+}
+
+/* Sitting animation - calm breathing */
+.pet.sitting {
+    animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+
+    0%,
+    100% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.97);
+    }
+}
+
+/* Chase mode - intense running */
+.pet.chasing {
+    animation: chaseRun 0.2s ease-in-out infinite;
+    filter: drop-shadow(0 5px 10px rgba(255, 0, 0, 0.3)) blur(0.5px);
+}
+
+@keyframes chaseRun {
+
+    0%,
+    100% {
+        transform: translateY(0) scaleY(1) scaleX(1.1) rotate(-2deg);
+    }
+
+    50% {
+        transform: translateY(-8px) scaleY(0.9) scaleX(1.15) rotate(2deg);
+    }
+}
+
+/* Fleeing animation */
+.pet.fleeing {
+    animation: flee 0.15s ease-in-out infinite;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 255, 0.3)) blur(0.7px);
+}
+
+@keyframes flee {
+
+    0%,
+    100% {
+        transform: translateY(0) scaleX(1.15) rotate(3deg);
+    }
+
+    50% {
+        transform: translateY(-10px) scaleX(1.2) rotate(-3deg);
+    }
 }

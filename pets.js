@@ -29,11 +29,17 @@ class Pet {
     update() {
         this.stateTimer++;
 
+        // Remove all animation classes
+        this.element.classList.remove('walking', 'running', 'scratching', 'sitting', 'chasing', 'fleeing');
+
         // Random behavior changes
         if (this.stateTimer > 200) {
             this.changeState();
             this.stateTimer = 0;
         }
+
+        // Add current state class
+        this.element.classList.add(this.state);
 
         if (this.state === 'walking') {
             this.x += this.speedX;
@@ -41,13 +47,10 @@ class Pet {
         } else if (this.state === 'running') {
             this.x += this.speedX * 2;
             this.y += this.speedY;
-        } else if (this.state === 'scratching') {
-            // Scratch animation (stay in place, wiggle)
-            this.element.style.transform = `scaleX(${this.facingRight ? 1 : -1}) rotate(${Math.sin(this.stateTimer * 0.3) * 5}deg)`;
         }
 
         // Bounce off walls
-        if (this.x < 0 || this.x > window.innerWidth - 60) {
+        if (this.x < 0 || this.x > window.innerWidth - 80) {
             this.speedX *= -1;
             this.facingRight = !this.facingRight;
         }
@@ -59,9 +62,9 @@ class Pet {
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
 
-        if (this.state !== 'scratching') {
-            this.element.style.transform = `scaleX(${this.facingRight ? 1 : -1})`;
-        }
+        // Update facing direction
+        const scaleX = this.facingRight ? 1 : -1;
+        this.element.style.transform = `scaleX(${scaleX})`;
     }
 
     changeState() {
@@ -147,11 +150,18 @@ function animatePets() {
 
     if (chaseMode) {
         chaseTimer++;
+
+        // Add chase/flee classes
+        dog.element.classList.add('chasing');
+        cat.element.classList.add('fleeing');
+
         dog.chaseTowards(cat);
         cat.runAwayFrom(dog);
 
         if (chaseTimer > 150 || distance > 400) {
             chaseMode = false;
+            dog.element.classList.remove('chasing');
+            cat.element.classList.remove('fleeing');
             console.log('[PETS] Chase ended');
         }
     }
