@@ -1,27 +1,66 @@
-// ===== ADVANCED PET ANIMATIONS =====
+// ===== ANIMATED CSS PETS =====
 
-class Pet {
-    constructor(type, imageSrc) {
+class AnimatedPet {
+    constructor(type) {
         this.type = type;
-        this.element = document.createElement('img');
-        this.element.src = imageSrc;
-        this.element.className = `pet ${type}`;
+        this.element = document.createElement('div');
+        this.element.className = `animated-pet ${type}`;
+
+        // Create pet body parts with CSS
+        if (type === 'cat') {
+            this.element.innerHTML = `
+                <div class="pet-body">
+                    <div class="pet-head">
+                        <div class="ear ear-left"></div>
+                        <div class="ear ear-right"></div>
+                        <div class="eye eye-left"></div>
+                        <div class="eye eye-right"></div>
+                        <div class="nose"></div>
+                    </div>
+                    <div class="pet-torso"></div>
+                    <div class="leg leg-front-left"></div>
+                    <div class="leg leg-front-right"></div>
+                    <div class="leg leg-back-left"></div>
+                    <div class="leg leg-back-right"></div>
+                    <div class="tail"></div>
+                </div>
+            `;
+        } else {
+            this.element.innerHTML = `
+                <div class="pet-body">
+                    <div class="pet-head">
+                        <div class="ear ear-left floppy"></div>
+                        <div class="ear ear-right floppy"></div>
+                        <div class="eye eye-left"></div>
+                        <div class="eye eye-right"></div>
+                        <div class="nose"></div>
+                    </div>
+                    <div class="pet-torso"></div>
+                    <div class="leg leg-front-left"></div>
+                    <div class="leg leg-front-right"></div>
+                    <div class="leg leg-back-left"></div>
+                    <div class="leg leg-back-right"></div>
+                    <div class="tail short"></div>
+                </div>
+            `;
+        }
+
         document.body.appendChild(this.element);
 
-        this.x = Math.random() * window.innerWidth;
-        this.y = Math.random() * (window.innerHeight - 100) + 50;
-        this.speedX = (Math.random() - 0.5) * 3;
-        this.speedY = (Math.random() - 0.5) * 2;
+        this.x = Math.random() * (window.innerWidth - 100);
+        this.y = Math.random() * (window.innerHeight - 200) + 100;
+        this.speedX = (Math.random() - 0.5) * 2;
+        this.speedY = (Math.random() - 0.5) * 1.5;
         this.facingRight = this.speedX > 0;
 
-        this.state = 'walking'; // walking, running, scratching, sitting
+        this.state = 'walking';
         this.stateTimer = 0;
     }
 
     update() {
         this.stateTimer++;
 
-        // Remove all animation classes
+        // Remove all state classes
         this.element.classList.remove('walking', 'running', 'scratching', 'sitting', 'chasing', 'fleeing');
 
         // Random behavior changes
@@ -37,31 +76,28 @@ class Pet {
             this.x += this.speedX;
             this.y += this.speedY * 0.5;
         } else if (this.state === 'running') {
-            this.x += this.speedX * 2;
-            this.y += this.speedY;
+            this.x += this.speedX * 2.5;
+            this.y += this.speedY * 1.5;
         }
 
         // Bounce off walls
-        if (this.x < 0 || this.x > window.innerWidth - 80) {
+        if (this.x < 0 || this.x > window.innerWidth - 100) {
             this.speedX *= -1;
             this.facingRight = !this.facingRight;
         }
-        if (this.y < 50 || this.y > window.innerHeight - 100) {
+        if (this.y < 100 || this.y > window.innerHeight - 150) {
             this.speedY *= -1;
         }
 
-        // Update position
+        // Update position and direction
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
-
-        // Update facing direction
-        const scaleX = this.facingRight ? 1 : -1;
-        this.element.style.transform = `scaleX(${scaleX})`;
+        this.element.style.transform = `scaleX(${this.facingRight ? 1 : -1})`;
     }
 
     changeState() {
         const states = ['walking', 'running', 'scratching', 'sitting'];
-        const weights = [0.5, 0.3, 0.15, 0.05]; // Probabilities
+        const weights = [0.5, 0.3, 0.15, 0.05];
 
         const rand = Math.random();
         let cumulative = 0;
@@ -74,13 +110,12 @@ class Pet {
             }
         }
 
-        // Adjust speed based on state
         if (this.state === 'sitting' || this.state === 'scratching') {
             this.speedX = 0;
             this.speedY = 0;
         } else {
-            this.speedX = (Math.random() - 0.5) * (this.state === 'running' ? 4 : 2);
-            this.speedY = (Math.random() - 0.5) * (this.state === 'running' ? 3 : 1.5);
+            this.speedX = (Math.random() - 0.5) * (this.state === 'running' ? 3 : 1.5);
+            this.speedY = (Math.random() - 0.5) * (this.state === 'running' ? 2 : 1);
             this.facingRight = this.speedX > 0;
         }
     }
@@ -97,8 +132,8 @@ class Pet {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist > 0) {
-            this.speedX = (dx / dist) * 5;
-            this.speedY = (dy / dist) * 3;
+            this.speedX = (dx / dist) * 4;
+            this.speedY = (dy / dist) * 2.5;
             this.facingRight = this.speedX > 0;
             this.state = 'running';
         }
@@ -110,17 +145,17 @@ class Pet {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist > 0) {
-            this.speedX = (dx / dist) * 6;
-            this.speedY = (dy / dist) * 4;
+            this.speedX = (dx / dist) * 5;
+            this.speedY = (dy / dist) * 3;
             this.facingRight = this.speedX > 0;
             this.state = 'running';
         }
     }
 }
 
-// Create pets
-const cat = new Pet('cat', 'cat.png');
-const dog = new Pet('dog', 'dog.png');
+// Create animated pets
+const cat = new AnimatedPet('cat');
+const dog = new AnimatedPet('dog');
 
 let chaseMode = false;
 let chaseTimer = 0;
@@ -130,11 +165,9 @@ function animatePets() {
     cat.update();
     dog.update();
 
-    // Chase logic
     const distance = cat.distanceTo(dog);
 
-    if (!chaseMode && distance < 150 && Math.random() < 0.02) {
-        // Start chase!
+    if (!chaseMode && distance < 200 && Math.random() < 0.01) {
         chaseMode = true;
         chaseTimer = 0;
         console.log('[PETS] Chase started!');
@@ -143,17 +176,16 @@ function animatePets() {
     if (chaseMode) {
         chaseTimer++;
 
-        // Add chase/flee classes
-        dog.element.classList.add('chasing');
         cat.element.classList.add('fleeing');
+        dog.element.classList.add('chasing');
 
         dog.chaseTowards(cat);
         cat.runAwayFrom(dog);
 
-        if (chaseTimer > 150 || distance > 400) {
+        if (chaseTimer > 200 || distance > 500) {
             chaseMode = false;
-            dog.element.classList.remove('chasing');
             cat.element.classList.remove('fleeing');
+            dog.element.classList.remove('chasing');
             console.log('[PETS] Chase ended');
         }
     }
@@ -161,7 +193,5 @@ function animatePets() {
     requestAnimationFrame(animatePets);
 }
 
-// Start animation
 animatePets();
-
-console.log('[PETS] Advanced cat and dog system initialized');
+console.log('[PETS] CSS animated pets initialized');
