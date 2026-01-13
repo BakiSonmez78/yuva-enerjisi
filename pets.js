@@ -3,17 +3,9 @@
 class Pet {
     constructor(type, imageSrc) {
         this.type = type;
-        this.element = document.createElement('div');
+        this.element = document.createElement('img');
+        this.element.src = imageSrc;
         this.element.className = `pet ${type}`;
-        this.element.style.cssText = `
-            position: fixed;
-            width: 60px;
-            height: 60px;
-            background-image: url('${imageSrc}');
-            background-size: cover;
-            z-index: 1000;
-            pointer-events: none;
-        `;
         document.body.appendChild(this.element);
 
         this.x = Math.random() * window.innerWidth;
