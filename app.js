@@ -196,6 +196,11 @@ async function updateMyEnergyFromTasks() {
         updateUI();
         generateNotifications();
 
+        // Check if tasks should be disabled
+        if (typeof updateTaskAvailability === 'function') {
+            updateTaskAvailability(myRole, finalEnergy);
+        }
+
         // Show summary
         const taskCount = taskCheckboxes.length;
         addNotification(`✅ Güncellendi: ${taskCount} görev, Enerji: %${finalEnergy}`, "success");

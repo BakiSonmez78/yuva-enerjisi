@@ -517,6 +517,42 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
+        // NEW: Daily Reset Endpoint
+        if (parsedUrl.pathname === '/api/reset-daily-energy') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', async () => {
+                try {
+                    const { email } = JSON.parse(body);
+                    if (!email) {
+                        res.writeHead(400);
+                        res.end(JSON.stringify({ error: 'Missing email' }));
+                        return;
+                    }
+
+                    const family = await findFamilyByEmail(email);
+                    if (!family) {
+                        res.writeHead(404);
+                        res.end(JSON.stringify({ error: 'Family not found' }));
+                        return;
+                    }
+
+                    // Clear manual energy (will default to 100)
+                    await updateFamily({ _id: family._id }, {
+                        $unset: { manual_energy: "" }
+                    });
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, message: 'Daily energy reset' }));
+                } catch (e) {
+                    console.error('Daily reset error:', e);
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ error: e.message }));
+                }
+            });
+            return;
+        }
+
         // 5. PRIVACY & TERMS
         if (parsedUrl.pathname === '/privacy') {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
