@@ -393,11 +393,15 @@ async function refreshDashboard() {
 
         // NEW: Show effects based on energy
         const total = state.momEnergy + state.dadEnergy;
-        if (total >= 180 && typeof showConfetti === 'function') {
+        console.log('[EFFECTS] Total energy:', total);
+
+        if (total >= 150 && typeof showConfetti === 'function') {
             // High energy - celebrate!
+            console.log('[EFFECTS] Triggering confetti');
             showConfetti();
-        } else if (total < 80 && typeof showMoraleBoost === 'function') {
+        } else if (total < 100 && typeof showMoraleBoost === 'function') {
             // Low energy - boost morale
+            console.log('[EFFECTS] Triggering morale boost');
             showMoraleBoost();
         }
 

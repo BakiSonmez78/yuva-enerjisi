@@ -3,18 +3,43 @@ const bgMusic = document.getElementById('bg-music');
 const musicToggle = document.getElementById('music-toggle');
 let isMusicPlaying = false;
 
-if (musicToggle) {
-    musicToggle.addEventListener('click', () => {
+console.log('[MUSIC] Music element:', bgMusic);
+console.log('[MUSIC] Toggle button:', musicToggle);
+
+if (musicToggle && bgMusic) {
+    musicToggle.addEventListener('click', async () => {
+        console.log('[MUSIC] Button clicked, current state:', isMusicPlaying);
+
         if (isMusicPlaying) {
             bgMusic.pause();
-            musicToggle.innerHTML = '<i class="fa-solid fa-music-slash"></i>';
+            musicToggle.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+            musicToggle.style.opacity = '0.5';
             isMusicPlaying = false;
+            console.log('[MUSIC] Paused');
         } else {
-            bgMusic.play().catch(e => console.log('Music play failed:', e));
-            musicToggle.innerHTML = '<i class="fa-solid fa-music"></i>';
-            isMusicPlaying = true;
+            try {
+                await bgMusic.play();
+                musicToggle.innerHTML = '<i class="fa-solid fa-music"></i>';
+                musicToggle.style.opacity = '1';
+                isMusicPlaying = true;
+                console.log('[MUSIC] Playing');
+            } catch (e) {
+                console.error('[MUSIC] Play failed:', e);
+                alert('Müzik çalınamadı. Tarayıcı izni gerekebilir.');
+            }
         }
     });
+
+    // Test music load
+    bgMusic.addEventListener('loadeddata', () => {
+        console.log('[MUSIC] Music loaded successfully');
+    });
+
+    bgMusic.addEventListener('error', (e) => {
+        console.error('[MUSIC] Music load error:', e);
+    });
+} else {
+    console.error('[MUSIC] Music or toggle button not found!');
 }
 
 // ===== UPDATE LABELS (Sen/Eşin) =====
@@ -33,6 +58,8 @@ function updatePersonLabels(myRole) {
 
 // ===== CONFETTI EFFECT =====
 function showConfetti() {
+    console.log('[CONFETTI] Showing confetti!');
+
     // Simple confetti using emoji
     const confettiContainer = document.createElement('div');
     confettiContainer.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;';
@@ -51,6 +78,8 @@ function showConfetti() {
 
 // ===== MORALE BOOST EFFECT =====
 function showMoraleBoost() {
+    console.log('[MORALE] Showing morale boost!');
+
     const messages = ['💪 Güçlüsün!', '🌟 Harikasın!', '❤️ Seni seviyoruz!', '🌈 Her şey düzelecek!'];
     const msg = messages[Math.floor(Math.random() * messages.length)];
 
