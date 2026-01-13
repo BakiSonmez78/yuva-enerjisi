@@ -24,10 +24,47 @@
     top: 10px;
     left: 50px;
     z-index: 3;
+    border: 2px solid #D97236;
 }
 
 .animated-pet.dog .pet-head {
     background: #8B4513;
+    border-color: #654321;
+}
+
+/* Cat stripes */
+.animated-pet.cat .pet-head::before {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 8px;
+    background: #D97236;
+    top: 5px;
+    left: 5px;
+    border-radius: 2px;
+}
+
+.animated-pet.cat .pet-head::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 8px;
+    background: #D97236;
+    top: 5px;
+    right: 5px;
+    border-radius: 2px;
+}
+
+/* Dog spot */
+.animated-pet.dog .pet-head::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #654321;
+    top: 3px;
+    right: 3px;
+    border-radius: 50%;
 }
 
 /* Ears */
@@ -38,10 +75,12 @@
     background: #FF8C42;
     border-radius: 50% 50% 0 0;
     top: -8px;
+    border: 2px solid #D97236;
 }
 
 .animated-pet.dog .ear {
     background: #8B4513;
+    border-color: #654321;
 }
 
 .ear-left {
@@ -126,11 +165,47 @@
     top: 20px;
     left: 15px;
     z-index: 1;
+    border: 2px solid #D97236;
 }
 
 .animated-pet.dog .pet-torso {
     background: #8B4513;
     width: 40px;
+    border-color: #654321;
+}
+
+/* Cat stripes on body */
+.animated-pet.cat .pet-torso::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background: #D97236;
+    top: 8px;
+    left: 0;
+}
+
+.animated-pet.cat .pet-torso::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background: #D97236;
+    top: 15px;
+    left: 0;
+}
+
+/* Dog white belly */
+.animated-pet.dog .pet-torso::before {
+    content: '';
+    position: absolute;
+    width: 25px;
+    height: 15px;
+    background: #FFF;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 50%;
 }
 
 /* Legs */
@@ -142,10 +217,12 @@
     border-radius: 3px;
     bottom: 0;
     z-index: 2;
+    border: 1px solid #D97236;
 }
 
 .animated-pet.dog .leg {
     background: #8B4513;
+    border-color: #654321;
 }
 
 .leg-front-left {
@@ -176,10 +253,12 @@
     transform-origin: right center;
     animation: wagTail 0.8s ease-in-out infinite;
     z-index: 0;
+    border: 1px solid #D97236;
 }
 
 .animated-pet.dog .tail {
     background: #8B4513;
+    border-color: #654321;
 }
 
 .tail.short {
