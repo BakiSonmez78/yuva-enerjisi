@@ -372,6 +372,12 @@ async function refreshDashboard() {
         state.momConnected = data.mom.connected;
         state.dadConnected = data.dad.connected;
 
+        // NEW: Determine my role and update labels (Sen/Eşin)
+        const myRole = data.mom.email === myEmail ? 'mom' : 'dad';
+        if (typeof updatePersonLabels === 'function') {
+            updatePersonLabels(myRole);
+        }
+
         // Hide/Show connection buttons based on who I am?
         // Actually now frontend just shows stats. The connection is "Google Login" which is already done.
         // We might want "Re-connect" buttons if token expired?
@@ -379,6 +385,16 @@ async function refreshDashboard() {
 
         updateUI();
         generateNotifications(); // Alerts
+
+        // NEW: Show effects based on energy
+        const total = state.momEnergy + state.dadEnergy;
+        if (total >= 180 && typeof showConfetti === 'function') {
+            // High energy - celebrate!
+            showConfetti();
+        } else if (total < 80 && typeof showMoraleBoost === 'function') {
+            // Low energy - boost morale
+            showMoraleBoost();
+        }
 
     } catch (e) {
         console.error(e);

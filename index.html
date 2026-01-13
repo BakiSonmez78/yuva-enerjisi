@@ -40,9 +40,18 @@
             </div>
 
             <div class="auth-buttons">
+                <!-- Music Toggle Button -->
+                <button class="icon-btn" id="music-toggle" title="Müzik Aç/Kapat" style="margin-right: 10px;">
+                    <i class="fa-solid fa-music"></i>
+                </button>
                 <!-- Content will be injected by JS (Login or User Info) -->
             </div>
         </header>
+
+        <!-- Background Music (Hidden) -->
+        <audio id="bg-music" loop>
+            <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
+        </audio>
 
         <main>
             <!-- Household Status -->
@@ -66,13 +75,13 @@
 
             <!-- Persons Cards -->
             <section class="persons-grid">
-                <!-- Anne -->
+                <!-- Mom Card -->
                 <div class="person-card mom">
                     <div class="avatar">
                         <i class="fa-solid fa-user-nurse"></i>
                     </div>
                     <div class="info">
-                        <h2>Anne</h2>
+                        <h2 id="mom-label">Anne</h2>
                         <div class="energy-bar-container">
                             <div class="energy-fill" id="mom-energy-bar" style="width: 0%"></div>
                         </div>
@@ -80,13 +89,13 @@
                     </div>
                 </div>
 
-                <!-- Baba -->
+                <!-- Dad Card -->
                 <div class="person-card dad">
                     <div class="avatar">
                         <i class="fa-solid fa-user-tie"></i>
                     </div>
                     <div class="info">
-                        <h2>Baba</h2>
+                        <h2 id="dad-label">Baba</h2>
                         <div class="energy-bar-container">
                             <div class="energy-fill" id="dad-energy-bar" style="width: 0%"></div>
                         </div>
@@ -199,6 +208,7 @@
 
 
     <script src="app.js?v=4"></script>
+    <script src="app-features.js"></script>
 </body>
 
 </html>
