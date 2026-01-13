@@ -1,0 +1,122 @@
+/* ===== PET ANIMATIONS ===== */
+
+.pet {
+    position: fixed;
+    bottom: 20px;
+    font-size: 3rem;
+    z-index: 1000;
+    cursor: pointer;
+    transition: transform 0.3s;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.pet:hover {
+    transform: scale(1.2);
+}
+
+/* Cat animation - walks from left to right */
+.cat {
+    animation: catWalk 20s linear infinite;
+}
+
+@keyframes catWalk {
+    0% {
+        left: -100px;
+        transform: scaleX(1);
+    }
+
+    48% {
+        left: calc(100% - 50px);
+        transform: scaleX(1);
+    }
+
+    50% {
+        left: calc(100% - 50px);
+        transform: scaleX(-1);
+    }
+
+    98% {
+        left: -100px;
+        transform: scaleX(-1);
+    }
+
+    100% {
+        left: -100px;
+        transform: scaleX(1);
+    }
+}
+
+/* Dog animation - walks from right to left */
+.dog {
+    animation: dogWalk 25s linear infinite;
+    animation-delay: 5s;
+}
+
+@keyframes dogWalk {
+    0% {
+        right: -100px;
+        transform: scaleX(-1);
+    }
+
+    48% {
+        right: calc(100% - 50px);
+        transform: scaleX(-1);
+    }
+
+    50% {
+        right: calc(100% - 50px);
+        transform: scaleX(1);
+    }
+
+    98% {
+        right: -100px;
+        transform: scaleX(1);
+    }
+
+    100% {
+        right: -100px;
+        transform: scaleX(-1);
+    }
+}
+
+/* Chase animation - when they meet */
+.chasing {
+    animation: chase 3s ease-in-out !important;
+}
+
+@keyframes chase {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    25% {
+        transform: translateY(-30px) scale(1.1);
+    }
+
+    50% {
+        transform: translateY(-50px) rotate(10deg) scale(1.2);
+    }
+
+    75% {
+        transform: translateY(-30px) rotate(-10deg) scale(1.1);
+    }
+}
+
+/* Jump animation */
+.jumping {
+    animation: jump 0.5s ease-in-out !important;
+}
+
+@keyframes jump {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-40px) rotate(360deg);
+    }
+}
