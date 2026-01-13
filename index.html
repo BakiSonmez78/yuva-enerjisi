@@ -44,6 +44,19 @@
                 <button class="icon-btn" id="music-toggle" title="Müzik Aç/Kapat" style="margin-right: 10px;">
                     <i class="fa-solid fa-music"></i>
                 </button>
+
+                <!-- TEST BUTTONS (Remove after testing) -->
+                <button class="icon-btn"
+                    onclick="if(typeof showConfetti==='function')showConfetti();else alert('Confetti function not found')"
+                    title="Test Konfeti" style="margin-right: 10px;">
+                    🎉
+                </button>
+                <button class="icon-btn"
+                    onclick="if(typeof showMoraleBoost==='function')showMoraleBoost();else alert('Morale function not found')"
+                    title="Test Moral" style="margin-right: 10px;">
+                    💪
+                </button>
+
                 <!-- Content will be injected by JS (Login or User Info) -->
             </div>
         </header>
