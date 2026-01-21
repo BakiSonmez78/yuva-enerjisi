@@ -370,6 +370,14 @@ async function refreshDashboard() {
             startEnergyPolling(); // NEW: Continuous sync
         }
 
+        // NEW: Debug Info Logging
+        if (data._debug) {
+            console.groupCollapsed("📊 [FamPulse] Google Fit Verisi");
+            if (data._debug.owner) console.log("Owner (Baba?):", data._debug.owner);
+            if (data._debug.partner) console.log("Partner (Anne?):", data._debug.partner);
+            console.groupEnd();
+        }
+
         // Update UI Points
         state.momEnergy = data.mom.energy || 0;
         state.dadEnergy = data.dad.energy || 0;

@@ -117,11 +117,18 @@ async function refreshToken(tokenData) {
 
 async function fetchFitnessData(accessToken) {
     const endTime = Date.now();
+    // Use a simpler approach: Get data for the last 24 hours to be safe, 
+    // OR create a date object and zero it out. 
+    // Let's rely on standard 'Start of Today' as per system time (UTC on Render).
+    // This might mean 'Today' is shifted by 3 hours for Turkey, but it's consistent.
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const startTime = start.getTime();
 
-    if (startTime >= endTime) return { data: { bucket: [] } };
+    // Debug Log
+    console.log(`[GoogleFit] Fetching from ${new Date(startTime).toISOString()} to ${new Date(endTime).toISOString()}`);
+
+    if (startTime >= endTime) return { statusCode: 200, data: { bucket: [] } }; // Return empty structure
 
     const body = JSON.stringify({
         aggregateBy: [
@@ -445,38 +452,49 @@ const server = http.createServer(async (req, res) => {
 
                 try {
                     const fitData = await fetchFitnessData(accessToken);
-                    let energy = 100; // Default full energy if no data
+                    let energy = 100; // Default
+                    let debugInfo = { steps: 0, heart: 0, raw: null, status: fitData.statusCode };
 
-                    if (fitData.data.bucket && fitData.data.bucket[0]) {
+                    if (fitData.data && fitData.data.bucket && fitData.data.bucket[0]) {
                         const ds = fitData.data.bucket[0].dataset;
                         const heartPoints = ds[0].point[0]?.value[0]?.fpVal || 0;
                         const steps = ds[1].point[0]?.value[0]?.intVal || 0;
 
+                        debugInfo.steps = steps;
+                        debugInfo.heart = heartPoints;
+                        debugInfo.raw = "Data Found";
+
                         // REALISTIC FATIGUE CALCULATION
                         // Target: 10,000 steps = 50 fatigue, 100 heart points = 40 fatigue
-                        // Light day (2000 steps, 7 heart) should be ~13 fatigue → 87% energy
-                        const fatigueFromSteps = (steps / 200);     // 10,000 steps = 50
-                        const fatigueFromHeart = (heartPoints * 0.4); // 100 heart = 40
+                        const fatigueFromSteps = (steps / 200);
+                        const fatigueFromHeart = (heartPoints * 0.4);
                         const totalFatigue = Math.min(90, fatigueFromSteps + fatigueFromHeart);
 
-
-                        // Energy = 100 - Fatigue (minimum 10 to avoid zero)
                         energy = Math.max(10, Math.round(100 - totalFatigue));
-
-                        console.log(`[${role.toUpperCase()}] Steps: ${steps}, Heart: ${heartPoints}, Fatigue: ${Math.round(totalFatigue)}, Energy: ${energy}%`);
+                        console.log(`[${role.toUpperCase()}] Steps: ${steps}, Heart: ${heartPoints}, Energy: ${energy}%`);
+                    } else {
+                        debugInfo.raw = "No Bucket Data (Empty)";
+                        console.log(`[${role.toUpperCase()}] No Fit Data found. Response: ${JSON.stringify(fitData.data).substring(0, 100)}`);
                     }
 
                     // Override with manual energy if set
                     if (family.manual_energy && family.manual_energy[role] !== undefined) {
                         energy = family.manual_energy[role];
-                        console.log(`[${role.toUpperCase()}] Using manual energy: ${energy}%`);
+                        debugInfo.manualOverride = true;
                     }
 
                     result[role].connected = true;
                     result[role].energy = energy;
-                    result[role].email = family[`${type}_email`]; // Add email for role detection
+                    result[role].email = family[`${type}_email`];
+
+                    // Attach debug info to result (frontend can ignore or log it)
+                    if (!result._debug) result._debug = {};
+                    result._debug[role] = debugInfo;
+
                 } catch (e) {
                     console.error("Fetch Fail", e);
+                    if (!result._debug) result._debug = {};
+                    result._debug[role] = { error: e.toString() };
                 }
             }
 
