@@ -8,10 +8,19 @@ const { MongoClient } = require('mongodb'); // RESTORED
 
 // CONFIG
 // CONFIG
+// CONFIG
 const PORT = process.env.PORT || 8080;
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI || 'https://yuva-enerjisi2.onrender.com/auth/callback';
+// Dynamic Redirect URI helper
+const getRedirectUri = (req) => {
+    if (process.env.REDIRECT_URI) return process.env.REDIRECT_URI;
+    const host = req.headers.host;
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    return `${protocol}://${host}/auth/callback`;
+};
+// Default fallback for initial auth url generation (assumes production if not specified)
+const DEFAULT_REDIRECT_URI = 'https://yuva-enerjisi2.onrender.com/auth/callback';
 const SCOPES = 'https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/userinfo.email';
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -67,12 +76,12 @@ async function getUserInfo(accessToken) {
     });
 }
 
-async function exchangeCode(code) {
+async function exchangeCode(code, redirectUri) {
     const postData = querystring.stringify({
         code: code,
         client_id: CLIENT_ID,
         client_secret: CLIENT_SECRET,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code'
     });
     return googleRequest({
@@ -229,9 +238,10 @@ const server = http.createServer(async (req, res) => {
         if (parsedUrl.pathname === '/auth/login') {
             const inviteCode = parsedUrl.query.invite;
             const state = inviteCode ? `invite:${inviteCode}` : 'login';
+            const dynamicRedirect = getRedirectUri(req);
 
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-                `client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&` +
+                `client_id=${CLIENT_ID}&redirect_uri=${dynamicRedirect}&` +
                 `response_type=code&scope=${SCOPES}&` +
                 `access_type=offline&prompt=consent&state=${state}`;
             res.writeHead(302, { 'Location': authUrl });
@@ -253,7 +263,8 @@ const server = http.createServer(async (req, res) => {
 
             if (!code) { res.end('No code'); return; }
 
-            const tokenResp = await exchangeCode(code);
+            const dynamicRedirect = getRedirectUri(req);
+            const tokenResp = await exchangeCode(code, dynamicRedirect);
             if (!tokenResp.data.access_token) { res.end('Auth Failed'); return; }
 
             const userResp = await getUserInfo(tokenResp.data.access_token);
