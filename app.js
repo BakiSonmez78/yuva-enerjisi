@@ -656,18 +656,18 @@ function generateNotifications() {
             const reqDad = 100 - state.momEnergy;
             const msg = `⚠️ Anne kritik seviyede (%${state.momEnergy})! Evin dengesi için Baba en az %${reqDad} enerji sağlamalı.`;
             addNotification(msg, 'alert');
-            if (isCritical) sendSystemNotification("Yuva Enerjisi: Anne Yorgun!", msg);
+            if (isCritical) sendSystemNotification("FamPulse: Anne Yorgun!", msg);
         }
         else if (state.dadEnergy < 50) {
             const reqMom = 100 - state.dadEnergy;
             const msg = `⚠️ Baba kritik seviyede (%${state.dadEnergy})! Evin dengesi için Anne en az %${reqMom} enerji sağlamalı.`;
             addNotification(msg, 'alert');
-            if (isCritical) sendSystemNotification("Yuva Enerjisi: Baba Yorgun!", msg);
+            if (isCritical) sendSystemNotification("FamPulse: Baba Yorgun!", msg);
         }
         else {
             const msg = `⚠️ Toplam enerji düşük (%${total}). Hane halkı dinlenmeli!`;
             addNotification(msg, 'alert');
-            if (isCritical) sendSystemNotification("Yuva Enerjisi Düşük!", "Toplam enerji 100'ün altında. Dinlenme vakti.");
+            if (isCritical) sendSystemNotification("FamPulse Enerji Düşük!", "Toplam enerji 100'ün altında. Dinlenme vakti.");
         }
     } else {
         // Even if total is > 100, if one person is really tired (<30), warn them.
