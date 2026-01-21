@@ -582,12 +582,11 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        // 5. PRIVACY & TERMS
         if (parsedUrl.pathname === '/privacy') {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end(`
                 <h1>Gizlilik Politikası (Privacy Policy)</h1>
-                <p><strong>Yuva Enerjisi</strong> uygulaması, ailenizin enerji durumunu dengelemek amacıyla Google Fit verilerinizi kullanır.</p>
+                <p><strong>FamPulse</strong> uygulaması, ailenizin enerji durumunu dengelemek amacıyla Google Fit verilerinizi kullanır.</p>
                 <h2>Toplanan Veriler</h2>
                 <ul>
                     <li>Google Hesap Bilgileri (Email, İsim)</li>
@@ -596,7 +595,7 @@ const server = http.createServer(async (req, res) => {
                 <h2>Veri Kullanımı</h2>
                 <p>Bu veriler SADECE eşinizle olan enerji dengenizi hesaplamak ve dashboard üzerinde göstermek amacıyla kullanılır. Üçüncü taraflarla paylaşılmaz. Reklam amaçlı kullanılmaz.</p>
                 <h2>Veri Silme</h2>
-                <p>Uygulama içinden "Çıkış Yap" dediğinizde verileriniz yalnızca tarayıcınızdan silinir. Veritabanından tamamen silinmek isterseniz <a href="mailto:support@yuvaenerjisi.com">iletişime geçin</a>.</p>
+                <p>Uygulama içinden "Çıkış Yap" dediğinizde verileriniz yalnızca tarayıcınızdan silinir. Veritabanından tamamen silinmek isterseniz <a href="mailto:support@fampulse.app">iletişime geçin</a>.</p>
             `);
             return;
         }
@@ -605,7 +604,7 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
             res.end(`
                 <h1>Hizmet Şartları (Terms of Service)</h1>
-                <p>Bu uygulama ("Yuva Enerjisi") eğlence ve aile içi farkındalık amaçlıdır. Tıbbi tavsiye vermez.</p>
+                <p>Bu uygulama ("FamPulse") eğlence ve aile içi farkındalık amaçlıdır. Tıbbi tavsiye vermez.</p>
                 <h2>Kullanım</h2>
                 <p>Uygulamayı kullanarak Google Fit verilerinize erişim izni vermeyi kabul edersiniz.</p>
                 <h2>Sorumluluk Reddi</h2>
